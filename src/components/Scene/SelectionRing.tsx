@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useSceneTheme } from '../../utils/useSceneTheme';
 
 interface SelectionRingProps {
   radius: number;
@@ -10,10 +11,12 @@ interface SelectionRingProps {
 
 export default function SelectionRing({ 
   radius, 
-  color = "#00D9FF",
+  color,
   position = [0, 0.1, 0]
 }: SelectionRingProps) {
+  const themeConfig = useSceneTheme();
   const ringRef = useRef<THREE.Mesh>(null);
+  const ringColor = color ?? themeConfig.colors.selectionGlow;
 
   // Animate rotation - single smooth rotation
   useFrame((state) => {
@@ -28,9 +31,9 @@ export default function SelectionRing({
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius * 0.85, radius * 0.95, 48]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.6}
+          color={ringColor}
+          emissive={ringColor}
+          emissiveIntensity={themeConfig.effects.selection.emissiveIntensity * 0.5}
           transparent
           opacity={0.9}
           side={THREE.DoubleSide}

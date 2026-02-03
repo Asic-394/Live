@@ -7,10 +7,12 @@ import StatusBar from './components/Controls/StatusBar';
 import EntityDetailPanel from './components/Panels/EntityDetailPanel';
 import ErrorDisplay from './components/Controls/ErrorDisplay';
 import ViewGizmo from './components/UI/ViewGizmo';
+import ThemeToggle from './components/UI/ThemeToggle';
 
 function App() {
   const loadDataset = useStore((state) => state.loadDataset);
   const loadingState = useStore((state) => state.loadingState);
+  const theme = useStore((state) => state.theme);
   const controlsRef = useRef<any>(null);
 
   // Load default dataset on mount
@@ -20,16 +22,26 @@ function App() {
     }
   }, [loadDataset, loadingState]);
 
+  // Apply theme class to document root
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
-    <div className="w-full h-full relative" style={{ background: '#1a1d22' }}>
+    <div className="w-full h-full relative bg-gray-200 dark:bg-[#1a1d22]">
       {/* Top Controls */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
         <DatasetSelector />
         <ResetButton />
       </div>
 
-      {/* Status Bar */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Status Bar and Theme Toggle */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <ThemeToggle />
         <StatusBar />
       </div>
 

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import type { WarehouseLayout, WarehouseLayoutElement } from '../../types';
 import { CoordinateMapper } from '../../utils/coordinates';
 import { useStore } from '../../state/store';
+import { useSceneTheme } from '../../utils/useSceneTheme';
 import RackFrame from './RackFrame';
 import BlobShadow from './BlobShadow';
 import RackInventory from './RackInventory';
@@ -141,6 +142,8 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
   const selectedRack = useStore((state) => state.selectedRack);
   const selectRack = useStore((state) => state.selectRack);
   const selectEntity = useStore((state) => state.selectEntity);
+  const theme = useStore((state) => state.theme);
+  const themeConfig = useSceneTheme();
   const { camera } = useThree();
 
   // Track camera distance for LOD
@@ -180,28 +183,28 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         const isStoragePicking = isStorage && isPicking; // Combined zone
         const isHovered = hoveredZone === zone.element_id;
         
-        // Zone-specific colors - more saturated for outlines
-        let zoneColor = '#2d4a5c';
-        let outlineColor = '#4a7a9c';
+        // Zone-specific colors - theme token driven
+        let zoneColor = themeConfig.colors.zoneDefault;
+        let outlineColor = themeConfig.colors.zoneDefaultOutline;
         if (isReceiving) {
-          zoneColor = '#3d5a4a';
-          outlineColor = '#5a8a6a';
+          zoneColor = themeConfig.colors.zoneReceiving;
+          outlineColor = themeConfig.colors.zoneReceivingOutline;
         }
         if (isStoragePicking) {
-          zoneColor = '#4a4a5c';
-          outlineColor = '#6a6a8c';
+          zoneColor = themeConfig.colors.zoneStorage;
+          outlineColor = themeConfig.colors.zoneStorageOutline;
         }
         else if (isStorage) {
-          zoneColor = '#4a4a5c';
-          outlineColor = '#6a6a8c';
+          zoneColor = themeConfig.colors.zoneStorage;
+          outlineColor = themeConfig.colors.zoneStorageOutline;
         }
         else if (isPicking) {
-          zoneColor = '#5c4a3d';
-          outlineColor = '#8c6a5d';
+          zoneColor = themeConfig.colors.zonePicking;
+          outlineColor = themeConfig.colors.zonePickingOutline;
         }
         if (isStaging) {
-          zoneColor = '#4a5a3d';
-          outlineColor = '#6a8a5d';
+          zoneColor = themeConfig.colors.zoneStaging;
+          outlineColor = themeConfig.colors.zoneStagingOutline;
         }
         
         return (
@@ -244,7 +247,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               position={[pos.x, 0.5, pos.z]}
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={4}
-              color="#7a8a9a"
+              color={themeConfig.colors.zoneLabelColor}
               anchorX="center"
               anchorY="middle"
               fillOpacity={isHovered ? 1.0 : getZoneLabelOpacity()}
@@ -262,7 +265,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                     return (
                       <lineSegments key={`marker-${row}-${col}`} position={[markerX, 0.15, markerZ]}>
                         <edgesGeometry args={[new THREE.BoxGeometry(4, 0.1, 4)]} />
-                        <lineBasicMaterial color="#6a8a6a" linewidth={1} />
+                        <lineBasicMaterial color={themeConfig.colors.zoneReceivingOutline} linewidth={1} />
                       </lineSegments>
                     );
                   })
@@ -279,12 +282,12 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                     <group key={`workstation-${i}`}>
                       <mesh position={[stationX, 0.5, pos.z + zone.depth / 3]} castShadow>
                         <boxGeometry args={[3, 1, 3]} />
-                        <meshStandardMaterial color="#6a5a4a" roughness={0.7} />
+                      <meshStandardMaterial color={themeConfig.colors.boxBase} roughness={0.7} />
                       </mesh>
                       <Text
                         position={[stationX, 1.5, pos.z + zone.depth / 3]}
                         fontSize={1}
-                        color="#9a8a7a"
+                        color={themeConfig.colors.zoneLabelColor}
                         anchorX="center"
                         anchorY="middle"
                       >
@@ -304,14 +307,14 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   return (
                     <mesh key={`queue-${line}`} position={[pos.x, 0.12, lineZ]} rotation={[-Math.PI / 2, 0, 0]}>
                       <planeGeometry args={[zone.width - 10, 1]} />
-                      <meshStandardMaterial color="#8a9a6a" roughness={0.8} />
+                      <meshStandardMaterial color={themeConfig.colors.zoneStagingOutline} roughness={0.8} />
                     </mesh>
                   );
                 })}
                 {/* Truck Bay Outline */}
                 <lineSegments position={[pos.x + zone.width / 3, 0.15, pos.z]}>
                   <edgesGeometry args={[new THREE.BoxGeometry(20, 0.1, 25)]} />
-                  <lineBasicMaterial color="#8a9a5a" linewidth={2} />
+                  <lineBasicMaterial color={themeConfig.colors.zoneStagingOutline} linewidth={2} />
                 </lineSegments>
               </>
             )}
@@ -330,7 +333,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             <mesh position={[pos.x, 0.02, pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[aisle.width, aisle.depth]} />
               <meshStandardMaterial 
-                color={isMainAisle ? '#3a3e42' : '#35393f'}
+                color={isMainAisle ? themeConfig.colors.aisleMain : themeConfig.colors.floorGrid}
                 transparent 
                 opacity={0.12} 
                 roughness={0.8}
@@ -340,7 +343,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             {/* Aisle centerline */}
             <mesh position={[pos.x, 0.08, pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[0.3, aisle.depth]} />
-              <meshStandardMaterial color="#5a5e65" roughness={0.7} />
+              <meshStandardMaterial color={themeConfig.colors.aisleCenterline} roughness={0.7} />
             </mesh>
 
             {/* Directional arrows */}
@@ -351,16 +354,16 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   {/* Arrow body */}
                   <mesh position={[pos.x, 0.1, arrowZ]} rotation={[-Math.PI / 2, 0, 0]}>
                     <planeGeometry args={[1, 4]} />
-                    <meshStandardMaterial color="#6a6e75" roughness={0.7} />
+                    <meshStandardMaterial color={themeConfig.colors.aisleArrow} roughness={0.7} />
                   </mesh>
                   {/* Arrow head */}
                   <mesh position={[pos.x, 0.1, arrowZ + 2.5]} rotation={[-Math.PI / 2, 0, Math.PI / 4]}>
                     <planeGeometry args={[2, 0.5]} />
-                    <meshStandardMaterial color="#6a6e75" roughness={0.7} />
+                    <meshStandardMaterial color={themeConfig.colors.aisleArrow} roughness={0.7} />
                   </mesh>
                   <mesh position={[pos.x, 0.1, arrowZ + 2.5]} rotation={[-Math.PI / 2, 0, -Math.PI / 4]}>
                     <planeGeometry args={[2, 0.5]} />
-                    <meshStandardMaterial color="#6a6e75" roughness={0.7} />
+                    <meshStandardMaterial color={themeConfig.colors.aisleArrow} roughness={0.7} />
                   </mesh>
                 </group>
               );
@@ -371,7 +374,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               position={[pos.x, 0.3, pos.z]}
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={2.5}
-              color="#7a7e84"
+              color={themeConfig.colors.aisleLabelColor}
               anchorX="center"
               anchorY="middle"
               fillOpacity={getAisleLabelOpacity()}
@@ -392,9 +395,21 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         
         // Refined color palette for premium look with dimming
         const baseDimFactor = isDimmed ? 0.4 : 1.0;
-        const rackColor = isSelected ? "#00D9FF" : isHovered ? "#9a9ea5" : "#6a6e75";
-        const emissiveColor = isSelected ? "#00D9FF" : isHovered ? "#ffffff" : "#000000";
-        const emissiveIntensity = isSelected ? 0.25 : isHovered ? 0.15 : 0;
+        const rackColor = isSelected
+          ? themeConfig.colors.rackSelected
+          : isHovered
+          ? themeConfig.colors.rackHover
+          : themeConfig.colors.rackDefault;
+        const emissiveColor = isSelected
+          ? themeConfig.effects.selection.glowColor
+          : isHovered
+          ? themeConfig.colors.rackHover
+          : '#000000';
+        const emissiveIntensity = isSelected
+          ? themeConfig.effects.selection.emissiveIntensity * 0.2
+          : isHovered
+          ? themeConfig.effects.hover.emissiveIntensity * 0.6
+          : 0;
         
         return (
           <group 
@@ -426,7 +441,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               width={rack.width}
               depth={rack.depth}
               position={[0, 0.005, 0]}
-              opacity={isDimmed ? 0.2 : 0.35}
+              opacity={isDimmed ? themeConfig.shadows.blob.opacity * 0.6 : themeConfig.shadows.blob.opacity}
             />
             
             {/* Rack frame structure - dimming applied via material properties */}
@@ -437,6 +452,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               color={rackColor}
               emissive={emissiveColor}
               emissiveIntensity={emissiveIntensity * baseDimFactor}
+              theme={theme}
             />
 
             {/* Inventory boxes on shelves */}
@@ -454,7 +470,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <lineSegments position={[0, height / 2, 0]}>
                 <edgesGeometry args={[new THREE.BoxGeometry(rack.width, height, rack.depth)]} />
                 <lineBasicMaterial 
-                  color={isSelected ? "#00D9FF" : "#ffffff"}
+                  color={isSelected ? themeConfig.colors.selectionGlow : themeConfig.colors.rackHover}
                   linewidth={3}
                   transparent
                   opacity={isSelected ? 1.0 : 0.9}
@@ -466,7 +482,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             <Text
               position={[0, height + 1, 0]}
               fontSize={1.5}
-              color="#c8ced4"
+              color={themeConfig.colors.rackLabelColor}
               anchorX="center"
               anchorY="middle"
               fillOpacity={isDimmed ? 0.4 : 1.0}
@@ -482,32 +498,33 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         const pos = CoordinateMapper.csvToThree(dock.x, dock.y, 0);
         const doorHeight = dock.height || 12;
         const isReceiving = dock.metadata?.type === 'receiving';
-        const doorColor = isReceiving ? '#3d7a5e' : '#5a7a3d';
+        const doorColor = isReceiving ? themeConfig.colors.dockReceiving : themeConfig.colors.dockShipping;
+        const doorEmissive = isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline;
         
         return (
           <group key={dock.element_id}>
             {/* Loading Bay Platform (elevated in front of door) */}
             <mesh position={[pos.x, 0.75, pos.z]} castShadow receiveShadow>
               <boxGeometry args={[dock.width + 4, 1.5, dock.depth + 4]} />
-              <meshStandardMaterial color="#4a4d52" roughness={0.8} />
+              <meshStandardMaterial color={themeConfig.colors.dockPlatform} roughness={0.8} />
             </mesh>
 
             {/* Dock Door Frame - Left Post */}
             <mesh position={[pos.x - dock.width / 2, doorHeight / 2, pos.z]} castShadow>
               <boxGeometry args={[0.8, doorHeight, 1]} />
-              <meshStandardMaterial color="#2d2f33" roughness={0.7} metalness={0.3} />
+              <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
             {/* Dock Door Frame - Right Post */}
             <mesh position={[pos.x + dock.width / 2, doorHeight / 2, pos.z]} castShadow>
               <boxGeometry args={[0.8, doorHeight, 1]} />
-              <meshStandardMaterial color="#2d2f33" roughness={0.7} metalness={0.3} />
+              <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
             {/* Dock Door Frame - Top Lintel */}
             <mesh position={[pos.x, doorHeight, pos.z]} castShadow>
               <boxGeometry args={[dock.width + 1.6, 1.2, 1]} />
-              <meshStandardMaterial color="#2d2f33" roughness={0.7} metalness={0.3} />
+              <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
             {/* Dock Door (roll-up style) with subtle glow */}
@@ -517,7 +534,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                 color={doorColor} 
                 roughness={0.6} 
                 metalness={0.4}
-                emissive="#1a3d2e"
+                emissive={doorEmissive}
                 emissiveIntensity={0.1}
               />
             </mesh>
@@ -526,7 +543,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             <lineSegments position={[pos.x, doorHeight / 2, pos.z + 0.2]}>
               <edgesGeometry args={[new THREE.BoxGeometry(dock.width, doorHeight, 0.1)]} />
               <lineBasicMaterial 
-                color={isReceiving ? "#4a9a7a" : "#7a9a4a"}
+                color={isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline}
                 linewidth={2}
                 transparent
                 opacity={0.8}
@@ -536,11 +553,11 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             {/* Safety Stripes on Platform (yellow/black) */}
             <mesh position={[pos.x - dock.width / 2 - 2, 1.51, pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[1.5, dock.depth + 4]} />
-              <meshStandardMaterial color="#f4d03f" roughness={0.7} />
+              <meshStandardMaterial color={themeConfig.colors.safetyYellow} roughness={0.7} />
             </mesh>
             <mesh position={[pos.x + dock.width / 2 + 2, 1.51, pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[1.5, dock.depth + 4]} />
-              <meshStandardMaterial color="#f4d03f" roughness={0.7} />
+              <meshStandardMaterial color={themeConfig.colors.safetyYellow} roughness={0.7} />
             </mesh>
             
             {/* Floor safety markings extending from dock */}
@@ -549,7 +566,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <mesh position={[pos.x, 0.02, pos.z + dock.depth / 2 + 8]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[dock.width + 8, 0.4]} />
                 <meshStandardMaterial 
-                  color="#f4d03f" 
+                  color={themeConfig.colors.safetyYellow} 
                   roughness={0.8}
                   transparent
                   opacity={0.7}
@@ -558,7 +575,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <mesh position={[pos.x, 0.02, pos.z + dock.depth / 2 + 12]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[dock.width + 8, 0.4]} />
                 <meshStandardMaterial 
-                  color="#f4d03f" 
+                  color={themeConfig.colors.safetyYellow} 
                   roughness={0.8}
                   transparent
                   opacity={0.5}
@@ -569,7 +586,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <mesh position={[pos.x - dock.width / 2 - 4, 0.02, pos.z + 6]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[0.3, 16]} />
                 <meshStandardMaterial 
-                  color="#e8e8e8" 
+                  color={themeConfig.colors.floorGrid} 
                   roughness={0.8}
                   transparent
                   opacity={0.6}
@@ -578,7 +595,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <mesh position={[pos.x + dock.width / 2 + 4, 0.02, pos.z + 6]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[0.3, 16]} />
                 <meshStandardMaterial 
-                  color="#e8e8e8" 
+                  color={themeConfig.colors.floorGrid} 
                   roughness={0.8}
                   transparent
                   opacity={0.6}
@@ -590,15 +607,15 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             <mesh position={[pos.x, doorHeight + 2, pos.z - 1]} castShadow>
               <boxGeometry args={[3, 2, 0.3]} />
               <meshStandardMaterial 
-                color="#2a3a4a"
-                emissive="#1a2a3a"
+                color={themeConfig.colors.wallTrim}
+                emissive={themeConfig.colors.wallTrim}
                 emissiveIntensity={0.15}
               />
             </mesh>
             <Text
               position={[pos.x, doorHeight + 2, pos.z - 0.85]}
               fontSize={1.5}
-              color="#f4d03f"
+              color={themeConfig.colors.dockLabelColor}
               anchorX="center"
               anchorY="middle"
             >
@@ -610,7 +627,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               position={[pos.x, 0.2, pos.z]}
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={1.5}
-              color={isReceiving ? '#5a9a7a' : '#8a9a5a'}
+              color={isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline}
               anchorX="center"
               anchorY="middle"
             >
@@ -638,7 +655,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               )]}
             />
             <lineBasicMaterial 
-              color="#2a2c30"
+              color={themeConfig.colors.floorGrid}
               linewidth={2}
               transparent
               opacity={0.6}
@@ -664,9 +681,9 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   >
                     <boxGeometry args={[segment.width, segment.height, segment.depth]} />
                     <meshStandardMaterial
-                      color="#6a6c70"
-                      roughness={0.95}
-                      metalness={0.1}
+                      color={themeConfig.colors.wallMain}
+                      roughness={themeConfig.materials.wall.roughness}
+                      metalness={themeConfig.materials.wall.metalness}
                     />
                   </mesh>
                   
@@ -677,9 +694,9 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   >
                     <boxGeometry args={[segment.width, 0.8, segment.depth]} />
                     <meshStandardMaterial
-                      color="#0d0f12"
-                      roughness={0.9}
-                      metalness={0.15}
+                      color={themeConfig.colors.wallTrim}
+                      roughness={themeConfig.materials.wall.roughness}
+                      metalness={themeConfig.materials.wall.metalness}
                     />
                   </mesh>
                 </group>

@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { useStore } from '../../state/store';
+import { getThemeConfig } from '../../utils/materials';
 
 interface RackInventoryProps {
   width: number;
@@ -18,9 +20,6 @@ interface BoxPosition {
   scale: number;
   colorIndex: number;
 }
-
-// Single box color - medium grey to match rack aesthetic
-const BOX_COLOR = new THREE.Color('#6a6e75');
 
 // Deterministic random generator using rack dimensions as seed
 function seededRandom(seed: number): number {
@@ -111,6 +110,10 @@ export default function RackInventory({
   isDimmed,
   cameraDistance,
 }: RackInventoryProps) {
+  const theme = useStore((state) => state.theme);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
+  
   // Generate box positions (memoized based on rack dimensions)
   const boxPositions = useMemo(() => {
     return generateBoxPositions(width, height, depth, levels);
@@ -118,6 +121,10 @@ export default function RackInventory({
   
   // Get shelf levels for pallet rendering
   const shelfLevels = useMemo(() => getShelfLevels(height), [height]);
+  
+  // Theme token: box and pallet colors
+  const boxColor = useMemo(() => new THREE.Color(colors.boxMedium), [colors.boxMedium]);
+  const palletColor = useMemo(() => colors.boxBase, [colors.boxBase]);
   
   // Don't render if no boxes
   if (boxPositions.length === 0) {
@@ -148,9 +155,9 @@ export default function RackInventory({
           >
             <boxGeometry args={[palletWidth, palletHeight, palletDepth]} />
             <meshStandardMaterial
-              color="#3a3e42"
-              roughness={0.9}
-              metalness={0.1}
+              color={palletColor}
+              roughness={config.materials.entity.roughness * 1.5}
+              metalness={config.materials.entity.metalness * 0.7}
               transparent={shouldBeTransparent}
               opacity={opacity}
             />
@@ -170,9 +177,9 @@ export default function RackInventory({
         >
           <boxGeometry args={[2, 2, 2]} />
           <meshStandardMaterial
-            color={BOX_COLOR}
-            roughness={0.85}
-            metalness={0.0}
+            color={boxColor}
+            roughness={config.materials.entity.roughness * 1.3}
+            metalness={config.materials.entity.metalness * 0.5}
             transparent={shouldBeTransparent}
             opacity={opacity}
             side={THREE.DoubleSide}

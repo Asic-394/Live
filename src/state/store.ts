@@ -1,6 +1,16 @@
 import { create } from 'zustand';
-import type { AppState } from '../types';
+import type { AppState, Theme } from '../types';
 import { DataService } from '../services/DataService';
+
+// Initialize theme from localStorage or system preference
+const getInitialTheme = (): Theme => {
+  const storedTheme = localStorage.getItem('warehouse-theme') as Theme | null;
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    return storedTheme;
+  }
+  const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return systemPreference;
+};
 
 export const useStore = create<AppState>((set, get) => ({
   // Data state
@@ -15,6 +25,9 @@ export const useStore = create<AppState>((set, get) => ({
   selectedRack: null,
   cameraReset: 0,
   cameraMode: 'perspective',
+
+  // UI state
+  theme: getInitialTheme(),
 
   // Actions
   loadDataset: async (datasetId: string) => {
@@ -71,5 +84,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   setCameraMode: (mode) => {
     set({ cameraMode: mode });
+  },
+
+  setTheme: (theme) => {
+    localStorage.setItem('warehouse-theme', theme);
+    set({ theme });
   },
 }));

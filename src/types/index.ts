@@ -79,6 +79,9 @@ export interface Dataset {
 // Camera types
 export type CameraMode = 'orthographic' | 'perspective';
 
+// Theme types
+export type Theme = 'light' | 'dark';
+
 // Application State (Zustand store)
 export interface AppState {
   // Data state
@@ -94,6 +97,9 @@ export interface AppState {
   cameraReset: number; // Increment to trigger camera reset
   cameraMode: CameraMode;
   
+  // UI state
+  theme: Theme;
+  
   // Actions
   loadDataset: (datasetId: string) => Promise<void>;
   resetScene: () => void;
@@ -101,6 +107,7 @@ export interface AppState {
   selectRack: (rackId: string | null) => void;
   setError: (error: string | null) => void;
   setCameraMode: (mode: CameraMode) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 // Three.js coordinate conversion types

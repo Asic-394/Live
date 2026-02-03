@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Entity } from '../../types';
 import { CoordinateMapper } from '../../utils/coordinates';
+import { getThemeConfig } from '../../utils/materials';
 import { useStore } from '../../state/store';
 import BlobShadow from './BlobShadow';
 
@@ -16,14 +17,24 @@ interface EntityMeshProps {
 }
 
 function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
+  const theme = useStore((state) => state.theme);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
   const [hovered, setHovered] = useState(false);
   const opacity = isDimmed ? 0.4 : 1.0;
 
+  // Theme token: selection and hover emissive intensity
+  const emissiveIntensity = isSelected 
+    ? config.effects.selection.emissiveIntensity * 0.3  // Slightly reduced for entities
+    : hovered 
+    ? config.effects.hover.emissiveIntensity 
+    : 0;
+
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
-      <BlobShadow width={2.5} depth={2.5} opacity={isDimmed ? 0.15 : 0.25} />
+      <BlobShadow width={2.5} depth={2.5} opacity={isDimmed ? 0.15 : undefined} />
       
       {/* Worker cylinder */}
       <mesh
@@ -34,11 +45,11 @@ function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
       >
         <cylinderGeometry args={[1, 1, 6]} />
         <meshStandardMaterial
-          color={isSelected ? '#d97706' : '#c2410c'}
-          emissive={isSelected || hovered ? '#c2410c' : '#000000'}
-          emissiveIntensity={(isSelected || hovered ? 0.2 : 0) * opacity}
-          roughness={0.6}
-          metalness={0.1}
+          color={isSelected ? colors.workerSelected : colors.worker}
+          emissive={isSelected || hovered ? colors.worker : '#000000'}
+          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
+          roughness={config.materials.entity.roughness}
+          metalness={config.materials.entity.metalness}
           transparent={isDimmed}
           opacity={opacity}
         />
@@ -48,14 +59,24 @@ function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
 }
 
 function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
+  const theme = useStore((state) => state.theme);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
   const [hovered, setHovered] = useState(false);
   const opacity = isDimmed ? 0.4 : 1.0;
 
+  // Theme token: selection and hover emissive intensity
+  const emissiveIntensity = isSelected 
+    ? config.effects.selection.emissiveIntensity * 0.3 
+    : hovered 
+    ? config.effects.hover.emissiveIntensity 
+    : 0;
+
   return (
     <group position={[pos.x, 0, pos.z]} onClick={onSelect}>
       {/* Blob shadow */}
-      <BlobShadow width={5} depth={7} opacity={isDimmed ? 0.15 : 0.3} />
+      <BlobShadow width={5} depth={7} opacity={isDimmed ? 0.15 : undefined} />
       
       {/* Body */}
       <mesh
@@ -65,11 +86,11 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
       >
         <boxGeometry args={[4, 4, 6]} />
         <meshStandardMaterial
-          color={isSelected ? '#ca8a04' : '#a16207'}
-          emissive={isSelected || hovered ? '#a16207' : '#000000'}
-          emissiveIntensity={(isSelected || hovered ? 0.2 : 0) * opacity}
-          roughness={0.5}
-          metalness={0.3}
+          color={isSelected ? colors.forkliftSelected : colors.forklift}
+          emissive={isSelected || hovered ? colors.forklift : '#000000'}
+          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
+          roughness={config.materials.entity.roughness * 0.85}
+          metalness={config.materials.entity.metalness * 2}
           transparent={isDimmed}
           opacity={opacity}
         />
@@ -78,7 +99,7 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
       <mesh position={[0, 1, 4]}>
         <boxGeometry args={[3, 1, 3]} />
         <meshStandardMaterial 
-          color="#52525b" 
+          color={colors.forkliftForks} 
           roughness={0.4} 
           metalness={0.6}
           transparent={isDimmed}
@@ -90,14 +111,24 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
 }
 
 function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
+  const theme = useStore((state) => state.theme);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
   const [hovered, setHovered] = useState(false);
   const opacity = isDimmed ? 0.4 : 1.0;
 
+  // Theme token: selection and hover emissive intensity
+  const emissiveIntensity = isSelected 
+    ? config.effects.selection.emissiveIntensity * 0.25 
+    : hovered 
+    ? config.effects.hover.emissiveIntensity * 0.8 
+    : 0;
+
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
-      <BlobShadow width={4.5} depth={4.5} opacity={isDimmed ? 0.15 : 0.25} />
+      <BlobShadow width={4.5} depth={4.5} opacity={isDimmed ? 0.15 : undefined} />
       
       {/* Pallet */}
       <mesh
@@ -108,10 +139,10 @@ function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
       >
         <boxGeometry args={[4, 2, 4]} />
         <meshStandardMaterial
-          color={isSelected ? '#78350f' : '#451a03'}
-          emissive={isSelected || hovered ? '#451a03' : '#000000'}
-          emissiveIntensity={(isSelected || hovered ? 0.15 : 0) * opacity}
-          roughness={0.85}
+          color={isSelected ? colors.palletSelected : colors.pallet}
+          emissive={isSelected || hovered ? colors.pallet : '#000000'}
+          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
+          roughness={config.materials.entity.roughness * 1.4}
           metalness={0.0}
           transparent={isDimmed}
           opacity={opacity}
@@ -122,15 +153,25 @@ function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
 }
 
 function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
+  const theme = useStore((state) => state.theme);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
   const [hovered, setHovered] = useState(false);
   const opacity = isDimmed ? 0.4 : 1.0;
+
+  // Theme token: selection and hover emissive intensity
+  const emissiveIntensity = isSelected 
+    ? config.effects.selection.emissiveIntensity * 0.25 
+    : hovered 
+    ? config.effects.hover.emissiveIntensity * 0.8 
+    : 0;
 
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow (only if on ground) */}
       {(entity.z === undefined || entity.z === 0) && (
-        <BlobShadow width={3.5} depth={3.5} opacity={isDimmed ? 0.15 : 0.25} />
+        <BlobShadow width={3.5} depth={3.5} opacity={isDimmed ? 0.15 : undefined} />
       )}
       
       {/* Inventory box */}
@@ -142,11 +183,11 @@ function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshPro
       >
         <boxGeometry args={[3, 3, 3]} />
         <meshStandardMaterial
-          color={isSelected ? '#71717a' : '#52525b'}
-          emissive={isSelected || hovered ? '#52525b' : '#000000'}
-          emissiveIntensity={(isSelected || hovered ? 0.15 : 0) * opacity}
-          roughness={0.7}
-          metalness={0.2}
+          color={colors.inventory}
+          emissive={isSelected || hovered ? colors.inventory : '#000000'}
+          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
+          roughness={config.materials.entity.roughness * 1.1}
+          metalness={config.materials.entity.metalness * 1.3}
           transparent={isDimmed}
           opacity={opacity}
         />

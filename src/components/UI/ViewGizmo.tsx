@@ -114,9 +114,9 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
       {/* Main Gizmo Container */}
-      <div className="bg-gray-900/90 backdrop-blur-sm rounded-lg border border-gray-700 shadow-lg overflow-hidden">
+      <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg overflow-hidden">
         {/* 3D Orientation Cube */}
-        <div className="relative p-3 border-b border-gray-700">
+        <div className="relative p-3 border-b border-gray-300 dark:border-gray-700">
           <OrientationCube controlsRef={controlsRef} />
         </div>
 
@@ -131,7 +131,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
                 w-full px-3 py-2 text-xs font-medium rounded transition-all flex items-center justify-center gap-2
                 ${hoveredView === 'map'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
                 }
               `}
             >
@@ -147,7 +147,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
                 w-full px-3 py-2 text-xs font-medium rounded transition-all flex items-center justify-center gap-2
                 ${hoveredView === 'birds-eye'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
                 }
               `}
             >
@@ -158,7 +158,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
         </div>
 
         {/* Camera Mode Toggle */}
-        <div className="p-2 border-t border-gray-700">
+        <div className="p-2 border-t border-gray-300 dark:border-gray-700">
           <div className="flex gap-1">
             <button
               onClick={() => handleCameraMode('orthographic')}
@@ -166,7 +166,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
                 flex-1 flex flex-col items-center justify-center py-2 px-2 rounded transition-all
                 ${cameraMode === 'orthographic'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
               title="Orthographic projection"
@@ -192,7 +192,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
                 flex-1 flex flex-col items-center justify-center py-2 px-2 rounded transition-all
                 ${cameraMode === 'perspective'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
               title="Perspective projection"

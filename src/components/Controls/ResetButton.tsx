@@ -8,7 +8,7 @@ export default function ResetButton() {
     <button
       onClick={resetScene}
       disabled={loadingState === 'loading'}
-      className="bg-warehouse-panel/90 backdrop-blur-md text-warehouse-text-primary px-4 py-2.5 rounded-lg shadow-lg border border-warehouse-border hover:bg-warehouse-panelHover hover:border-warehouse-border/70 focus:outline-none focus:ring-2 focus:ring-warehouse-accent-cyan/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+      className="bg-white/90 dark:bg-warehouse-panel/90 backdrop-blur-md text-gray-900 dark:text-warehouse-text-primary px-4 py-2.5 rounded-lg shadow-lg border border-gray-300 dark:border-warehouse-border hover:bg-gray-100 dark:hover:bg-warehouse-panelHover hover:border-gray-400 dark:hover:border-warehouse-border/70 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-warehouse-accent-cyan/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
       title="Reset camera and reload current dataset"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,307 +1,304 @@
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { useEffect, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, OrthographicCamera, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useStore } from '../../state/store';
-import { CoordinateMapper } from '../../utils/coordinates';
-import WarehouseLayout from './WarehouseLayout';
+import { useSceneTheme } from '../../utils/useSceneTheme';
+import WarehouseLayoutComponent from './WarehouseLayout';
 import EntityRenderer from './EntityRenderer';
-import { useEffect, useRef } from 'react';
+import { CoordinateMapper } from '../../utils/coordinates';
 
 interface WarehouseSceneProps {
-  controlsRef?: React.RefObject<any>;
+  controlsRef: React.RefObject<any>;
 }
 
-export default function WarehouseScene({ controlsRef: externalControlsRef }: WarehouseSceneProps = {}) {
+function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
   const warehouseLayout = useStore((state) => state.warehouseLayout);
   const entities = useStore((state) => state.entities);
-  const cameraReset = useStore((state) => state.cameraReset);
-  const loadingState = useStore((state) => state.loadingState);
-  const cameraMode = useStore((state) => state.cameraMode);
+  const selectedEntity = useStore((state) => state.selectedEntity);
   const selectedRack = useStore((state) => state.selectedRack);
-  const selectEntity = useStore((state) => state.selectEntity);
-  const selectRack = useStore((state) => state.selectRack);
-  
-  const internalControlsRef = useRef<any>(null);
-  const controlsRef = externalControlsRef || internalControlsRef;
+  const cameraReset = useStore((state) => state.cameraReset);
+  const cameraMode = useStore((state) => state.cameraMode);
+  const theme = useSceneTheme();
+  const { camera, gl } = useThree();
+  const orbitControlsRef = useRef<any>(null);
 
-  // Handle background clicks to deselect
-  const handleBackgroundClick = () => {
-    selectEntity(null);
-    selectRack(null);
-  };
-
-  // Reset camera when dataset changes
   useEffect(() => {
-    if (warehouseLayout && controlsRef.current && cameraReset > 0) {
-      const { position, target } = CoordinateMapper.calculateCameraPosition(warehouseLayout.bounds);
-      
-      // Smoothly animate to new camera position using GSAP
-      if (controlsRef.current.object) {
-        const camera = controlsRef.current.object;
-        const controls = controlsRef.current;
-        
-        // Animate camera position
-        gsap.to(camera.position, {
-          x: position.x,
-          y: position.y,
-          z: position.z,
-          duration: 1.5,
-          ease: 'power2.inOut',
-          onUpdate: () => controls.update(),
-        });
-        
-        // Animate target
-        gsap.to(controls.target, {
-          x: target.x,
-          y: target.y,
-          z: target.z,
-          duration: 1.5,
-          ease: 'power2.inOut',
-          onUpdate: () => controls.update(),
-        });
-      }
-    }
-  }, [warehouseLayout, cameraReset]);
+    if (orbitControlsRef.current && warehouseLayout) {
+      const controls = orbitControlsRef.current;
+      controlsRef.current = controls;
 
-  // Focus camera on selected rack with smooth animation from current angle
-  useEffect(() => {
-    if (!controlsRef.current || !controlsRef.current.object) return;
-    
-    const camera = controlsRef.current.object;
-    const controls = controlsRef.current;
-    
-    // Reset orthographic zoom when rack is deselected (luxurious feel)
-    if (!selectedRack && cameraMode === 'orthographic' && 'zoom' in camera) {
-      gsap.to(camera, {
-        zoom: 2.5, // Default zoom level
-        duration: 1.5,
-        ease: 'power2.out',
-        onUpdate: () => {
+      const bounds = warehouseLayout.bounds;
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerZ = -(bounds.minY + bounds.maxY) / 2;
+      const size = Math.max(
+        bounds.maxX - bounds.minX,
+        bounds.maxZ - bounds.minZ,
+        bounds.maxY - bounds.minY
+      );
+
+      controls.target.set(centerX, 0, centerZ);
+
+      const distance = size * 1.5;
+      if (cameraMode === 'orthographic') {
+        camera.position.set(centerX + distance * 0.7, distance * 1.2, centerZ + distance * 0.7);
+        if ('zoom' in camera) {
+          camera.zoom = 2.0;
           camera.updateProjectionMatrix();
+        }
+      } else {
+        camera.position.set(centerX + distance * 0.7, distance * 0.8, centerZ + distance * 0.7);
+      }
+
+      controls.update();
+    }
+  }, [warehouseLayout, cameraMode, cameraReset, camera, controlsRef]);
+
+  useEffect(() => {
+    gl.setClearColor(theme.renderer.background);
+    gl.toneMapping = theme.renderer.toneMapping as THREE.ToneMapping;
+    gl.toneMappingExposure = theme.renderer.toneMappingExposure;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+  }, [gl, theme.renderer]);
+
+  useEffect(() => {
+    if (!orbitControlsRef.current || !warehouseLayout) return;
+
+    const controls = orbitControlsRef.current;
+    const cameraObj = controls.object as THREE.Camera;
+
+    let target: { x: number; y: number; z: number } | null = null;
+    let position: { x: number; y: number; z: number } | null = null;
+    let zoom: number | undefined;
+
+    if (selectedRack) {
+      const rack = warehouseLayout.racks.find((r) => r.element_id === selectedRack);
+      if (!rack) return;
+      const focus = CoordinateMapper.calculateRackFocusPosition(
+        rack.x,
+        rack.y,
+        rack.z || 0,
+        rack.width,
+        rack.depth,
+        rack.height || 18
+      );
+      target = focus.target;
+      position = focus.position;
+      zoom = 3.0;
+    } else if (selectedEntity) {
+      const entity = entities.find((e) => e.entity_id === selectedEntity);
+      if (!entity) return;
+      const entityPos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
+      const distance = 25;
+      target = {
+        x: entityPos.x,
+        y: Math.max(1, entityPos.y),
+        z: entityPos.z,
+      };
+      position = {
+        x: entityPos.x + distance * 0.6,
+        y: entityPos.y + distance * 0.5 + 5,
+        z: entityPos.z + distance * 0.6,
+      };
+      zoom = 3.5;
+    }
+
+    if (!target || !position) return;
+
+    gsap.to(cameraObj.position, {
+      x: position.x,
+      y: position.y,
+      z: position.z,
+      duration: 0.9,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update(),
+    });
+
+    gsap.to(controls.target, {
+      x: target.x,
+      y: target.y,
+      z: target.z,
+      duration: 0.9,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update(),
+    });
+
+    if (zoom !== undefined && cameraMode === 'orthographic' && 'zoom' in cameraObj) {
+      gsap.to(cameraObj, {
+        zoom,
+        duration: 0.9,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          cameraObj.updateProjectionMatrix();
           controls.update();
         },
       });
-      return;
     }
-    
-    if (selectedRack && warehouseLayout && controlsRef.current) {
-      const rack = warehouseLayout.racks.find((r) => r.element_id === selectedRack);
-      if (rack && controlsRef.current.object) {
-        const camera = controlsRef.current.object;
-        const controls = controlsRef.current;
-        
-        // Calculate rack center in Three.js coordinates
-        const rackHeight = rack.height || 18;
-        const rackCenterCoords = CoordinateMapper.csvToThree(rack.x, rack.y, rack.z || 0);
-        const rackCenter = new THREE.Vector3(rackCenterCoords.x, rackHeight / 2, rackCenterCoords.z);
-        
-        // Get current camera position and direction to rack
-        const currentPos = camera.position.clone();
-        const directionToRack = new THREE.Vector3()
-          .subVectors(rackCenter, currentPos)
-          .normalize();
-        
-        // Calculate zoom distance based on rack size
-        const maxDim = Math.max(rack.width, rack.depth, rackHeight);
-        // In orthographic mode, keep camera further to avoid clipping
-        const zoomDistance = cameraMode === 'orthographic' 
-          ? maxDim * 4.0  // Further away for orthographic
-          : maxDim * 2.5; // Closer for perspective
-        
-        // New camera position: zoom in from current angle
-        const newPosition = new THREE.Vector3()
-          .copy(rackCenter)
-          .sub(directionToRack.multiplyScalar(zoomDistance));
-        
-        // Smoothly animate camera position to zoom in from current angle (luxurious feel)
-        gsap.to(camera.position, {
-          x: newPosition.x,
-          y: newPosition.y,
-          z: newPosition.z,
-          duration: 1.5,
-          ease: 'power2.out',
-          onUpdate: () => controls.update(),
-        });
-        
-        // Smoothly animate target to rack center
-        gsap.to(controls.target, {
-          x: rackCenter.x,
-          y: rackCenter.y,
-          z: rackCenter.z,
-          duration: 1.5,
-          ease: 'power2.out',
-          onUpdate: () => controls.update(),
-        });
-        
-        // For orthographic cameras, also animate the zoom property
-        if (cameraMode === 'orthographic' && 'zoom' in camera) {
-          // Calculate appropriate zoom level based on rack size
-          // Higher multiplier = more zoom in
-          const targetZoom = 100 / maxDim; // Increased from 50 for better zoom
-          
-          gsap.to(camera, {
-            zoom: targetZoom,
-            duration: 1.5,
-            ease: 'power2.out',
-            onUpdate: () => {
-              camera.updateProjectionMatrix();
-              controls.update();
-            },
-          });
-        }
-      }
-    }
-  }, [selectedRack, warehouseLayout, cameraMode]);
+  }, [selectedEntity, selectedRack, entities, warehouseLayout, cameraMode]);
 
-  if (loadingState === 'loading') {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-white text-xl">Loading warehouse...</div>
-      </div>
-    );
+  if (!warehouseLayout) {
+    return null;
   }
 
-  if (!warehouseLayout || entities.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-white text-xl">No data loaded</div>
-      </div>
-    );
-  }
-
-  const { position, target } = CoordinateMapper.calculateCameraPosition(warehouseLayout.bounds);
-
-  // Camera configuration based on mode
-  const cameraConfig = cameraMode === 'orthographic' 
-    ? {
-        orthographic: true,
-        camera: {
-          position: [position.x, position.y, position.z] as [number, number, number],
-          zoom: 2.5,
-          near: 0.1,
-          far: 2000,
-        }
-      }
-    : {
-        camera: {
-          position: [position.x, position.y, position.z] as [number, number, number],
-          fov: 50,
-          near: 0.1,
-          far: 2000,
-        }
-      };
+  const bounds = warehouseLayout.bounds;
+  const floorWidth = (bounds.maxX - bounds.minX) * 1.2;
+  const floorDepth = (bounds.maxY - bounds.minY) * 1.2;
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerZ = -(bounds.minY + bounds.maxY) / 2;
+  const gridOpacity = Math.min(0.18, Math.max(0.08, theme.shadows.contact.opacity * 0.35));
 
   return (
-    <Canvas
-      key={cameraMode} // Force remount when camera mode changes
-      shadows
-      {...cameraConfig}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-      onCreated={({ scene }) => {
-        scene.background = new THREE.Color('#1a1d22');
-      }}
-    >
-      {/* Low ambient for depth and grounding */}
-      <ambientLight intensity={0.45} color="#e0e6ed" />
-
-      {/* Main key light - cool temperature without expensive shadows */}
-      <directionalLight 
-        position={[50, 100, 40]} 
-        intensity={1.2} 
-        color="#e0e6ed"
-      />
-
-      {/* Fill light with warm temperature */}
-      <directionalLight 
-        position={[-40, 80, -30]} 
-        intensity={0.8} 
-        color="#ede8e0"
-      />
-
-      {/* Soft overhead spotlight for grounding */}
-      <spotLight
-        position={[0, 150, 0]}
-        angle={Math.PI / 3}
-        penumbra={0.8}
-        intensity={0.6}
-        color="#e8eaed"
-        castShadow={false}
-      />
-
-      {/* Subtle hemisphere for ambient */}
-      <hemisphereLight 
-        color="#ffffff" 
-        groundColor="#8a8e94" 
-        intensity={0.4} 
-      />
-
-      {/* World floor - darker base layer */}
-      <mesh 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        position={[0, -0.2, 0]}
-      >
-        <planeGeometry args={[1000, 1000]} />
-        <meshStandardMaterial 
-          color="#1a1c1f"
-          roughness={0.95}
-          metalness={0.0}
+    <>
+      {cameraMode === 'orthographic' ? (
+        <OrthographicCamera
+          makeDefault
+          zoom={2.0}
+          near={0.1}
+          far={10000}
+          position={[100, 150, 100]}
         />
-      </mesh>
+      ) : (
+        <PerspectiveCamera
+          makeDefault
+          fov={50}
+          near={0.1}
+          far={10000}
+          position={[100, 120, 100]}
+        />
+      )}
 
-      {/* Warehouse floor - charcoal base */}
-      {warehouseLayout && (() => {
-        const boundsWidth = warehouseLayout.bounds.maxX - warehouseLayout.bounds.minX;
-        const boundsDepth = warehouseLayout.bounds.maxY - warehouseLayout.bounds.minY;
-        const centerX = (warehouseLayout.bounds.minX + warehouseLayout.bounds.maxX) / 2;
-        const centerZ = -(warehouseLayout.bounds.minY + warehouseLayout.bounds.maxY) / 2;
-        
-        return (
-          <mesh 
-            rotation={[-Math.PI / 2, 0, 0]} 
-            position={[centerX, 0.02, centerZ]} 
-            receiveShadow
-            onClick={handleBackgroundClick}
-          >
-            <planeGeometry args={[boundsWidth * 1.05, boundsDepth * 1.05]} />
-            <meshStandardMaterial 
-              color="#2a2c30"
-              roughness={0.9}
-              metalness={0.05}
-            />
-          </mesh>
-        );
-      })()}
-
-      {/* Warehouse Layout */}
-      <WarehouseLayout layout={warehouseLayout} />
-
-      {/* Entities */}
-      <EntityRenderer entities={entities} />
-
-      {/* Camera Controls */}
       <OrbitControls
-        ref={controlsRef}
-        target={[target.x, target.y, target.z]}
+        ref={orbitControlsRef}
         enableDamping
         dampingFactor={0.05}
         minDistance={20}
-        maxDistance={500}
-        maxPolarAngle={cameraMode === 'orthographic' ? Math.PI / 2 - 0.1 : Math.PI / 2 + 0.3}
-        enablePan
-        panSpeed={1}
+        maxDistance={1000}
+        maxPolarAngle={Math.PI / 2 - 0.1}
+        screenSpacePanning={false}
       />
 
-      {/* Subtle grid on world floor for spatial reference */}
-      <gridHelper 
-        args={[
-          500,
-          100,
-          '#2a2e34',  // More visible center lines
-          '#1e2226'   // Subtle but present grid lines
-        ]} 
-        position={[0, -0.09, 0]}
+      <ambientLight
+        intensity={theme.lighting.ambient.intensity}
+        color={theme.lighting.ambient.color}
       />
+
+      <directionalLight
+        position={theme.lighting.keyLight.position}
+        intensity={theme.lighting.keyLight.intensity}
+        color={theme.lighting.keyLight.color}
+        castShadow={theme.lighting.keyLight.castShadow && theme.shadows.enabled}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={500}
+        shadow-camera-left={-200}
+        shadow-camera-right={200}
+        shadow-camera-top={200}
+        shadow-camera-bottom={-200}
+        shadow-bias={-0.0001}
+      />
+
+      <directionalLight
+        position={theme.lighting.fillLight.position}
+        intensity={theme.lighting.fillLight.intensity}
+        color={theme.lighting.fillLight.color}
+      />
+
+      <directionalLight
+        position={theme.lighting.rimLight.position}
+        intensity={theme.lighting.rimLight.intensity}
+        color={theme.lighting.rimLight.color}
+      />
+
+      <hemisphereLight
+        intensity={theme.lighting.hemisphere.intensity}
+        color={theme.lighting.hemisphere.skyColor}
+        groundColor={theme.lighting.hemisphere.groundColor}
+      />
+
+      <mesh
+        position={[centerX, -0.25, centerZ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[floorWidth * 2, floorDepth * 2]} />
+        <meshStandardMaterial
+          color={theme.colors.background}
+          roughness={1.0}
+          metalness={0}
+        />
+      </mesh>
+
+      <mesh
+        position={[centerX, 0.0, centerZ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[floorWidth, floorDepth]} />
+        <meshStandardMaterial
+          color={theme.colors.floorBase}
+          roughness={theme.materials.floor.roughness}
+          metalness={theme.materials.floor.metalness}
+        />
+      </mesh>
+
+      <mesh
+        position={[centerX, 0.003, centerZ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[floorWidth, floorDepth]} />
+        <meshStandardMaterial
+          color={theme.colors.floorGrid}
+          transparent
+          opacity={gridOpacity}
+          roughness={0.9}
+          polygonOffset
+          polygonOffsetFactor={-1}
+          polygonOffsetUnits={-1}
+        />
+      </mesh>
+
+      {theme.shadows.enabled && (
+        <ContactShadows
+          position={[centerX, 0.006, centerZ]}
+          opacity={theme.shadows.contact.opacity}
+          scale={Math.max(floorWidth, floorDepth)}
+          blur={theme.shadows.contact.blur}
+          far={50}
+          resolution={512}
+          color="#000000"
+        />
+      )}
+
+      {theme.fog.enabled && (
+        <fog
+          attach="fog"
+          args={[theme.fog.color, theme.fog.near, theme.fog.far]}
+        />
+      )}
+
+      <WarehouseLayoutComponent layout={warehouseLayout} />
+      <EntityRenderer entities={entities} />
+    </>
+  );
+}
+
+export default function WarehouseScene({ controlsRef }: WarehouseSceneProps) {
+  const theme = useSceneTheme();
+
+  return (
+    <Canvas
+      shadows
+      className="w-full h-full"
+      gl={{
+        antialias: true,
+        alpha: false,
+        powerPreference: 'high-performance',
+      }}
+      dpr={[1, 2]}
+    >
+      <color attach="background" args={[theme.renderer.background]} />
+      <SceneContent controlsRef={controlsRef} />
     </Canvas>
   );
 }

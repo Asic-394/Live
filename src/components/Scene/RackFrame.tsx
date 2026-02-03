@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import type { Theme } from '../../types';
+import { getThemeConfig } from '../../utils/materials';
 
 interface RackFrameProps {
   width: number;
@@ -8,6 +10,7 @@ interface RackFrameProps {
   color: string;
   emissive: string;
   emissiveIntensity: number;
+  theme: Theme;
   roughness?: number;
   metalness?: number;
 }
@@ -19,9 +22,14 @@ export default function RackFrame({
   color,
   emissive,
   emissiveIntensity,
-  roughness = 0.45,
-  metalness = 0.2,
+  theme,
+  roughness,
+  metalness,
 }: RackFrameProps) {
+  // Theme token: use theme material properties if not overridden
+  const config = getThemeConfig(theme);
+  const finalRoughness = roughness ?? config.materials.rack.roughness;
+  const finalMetalness = metalness ?? config.materials.rack.metalness;
   // Memoize upright and beam positions for performance
   const uprightPositions = useMemo(() => {
     const halfWidth = width / 2;
@@ -59,8 +67,8 @@ export default function RackFrame({
           <cylinderGeometry args={[0.22, 0.22, height, 8]} />
           <meshStandardMaterial
             color={color}
-            roughness={roughness}
-            metalness={metalness}
+            roughness={finalRoughness}
+            metalness={finalMetalness}
             emissive={emissive}
             emissiveIntensity={emissiveIntensity}
           />
@@ -82,8 +90,8 @@ export default function RackFrame({
               <boxGeometry args={[width, beamSize, beamSize]} />
               <meshStandardMaterial
                 color={beamColor}
-                roughness={roughness}
-                metalness={metalness}
+                roughness={finalRoughness}
+                metalness={finalMetalness}
                 emissive={emissive}
                 emissiveIntensity={beamEmissive}
               />
@@ -94,8 +102,8 @@ export default function RackFrame({
               <boxGeometry args={[width, beamSize, beamSize]} />
               <meshStandardMaterial
                 color={beamColor}
-                roughness={roughness}
-                metalness={metalness}
+                roughness={finalRoughness}
+                metalness={finalMetalness}
                 emissive={emissive}
                 emissiveIntensity={beamEmissive}
               />
@@ -106,8 +114,8 @@ export default function RackFrame({
               <boxGeometry args={[beamSize, beamSize, depth]} />
               <meshStandardMaterial
                 color={beamColor}
-                roughness={roughness}
-                metalness={metalness}
+                roughness={finalRoughness}
+                metalness={finalMetalness}
                 emissive={emissive}
                 emissiveIntensity={beamEmissive}
               />
@@ -118,8 +126,8 @@ export default function RackFrame({
               <boxGeometry args={[beamSize, beamSize, depth]} />
               <meshStandardMaterial
                 color={beamColor}
-                roughness={roughness}
-                metalness={metalness}
+                roughness={finalRoughness}
+                metalness={finalMetalness}
                 emissive={emissive}
                 emissiveIntensity={beamEmissive}
               />

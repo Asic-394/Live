@@ -75,6 +75,7 @@ export interface ThemeConfig {
     pallet: string;
     palletSelected: string;
     inventory: string;
+    inventorySelected: string;
 
     // Accents
     accentCyan: string;
@@ -223,6 +224,7 @@ const DARK_THEME_CONFIG: ThemeConfig = {
     pallet: '#7a6a5a',
     palletSelected: '#00D9FF',
     inventory: '#6a7a8a',
+    inventorySelected: '#4ade80',
 
     accentCyan: '#22d3ee',
     selectionGlow: '#00D9FF',
@@ -370,6 +372,7 @@ const LIGHT_THEME_CONFIG: ThemeConfig = {
     pallet: '#6a5a4a',
     palletSelected: '#0088cc',
     inventory: '#5a6a7a',
+    inventorySelected: '#22c55e',
 
     accentCyan: '#0099dd',
     selectionGlow: '#0088cc',

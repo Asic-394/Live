@@ -1,0 +1,51 @@
+{
+  "overlays": [
+    {
+      "id": "heat_congestion",
+      "type": "heat_congestion",
+      "name": "Zone Congestion",
+      "colorScale": [
+        { "value": 0.0, "color": "#4caf50" },
+        { "value": 0.5, "color": "#ffeb3b" },
+        { "value": 0.75, "color": "#ff9800" },
+        { "value": 1.0, "color": "#f44336" }
+      ],
+      "legend": {
+        "min": 0,
+        "max": 1,
+        "unit": "density"
+      }
+    },
+    {
+      "id": "heat_utilization",
+      "type": "heat_utilization",
+      "name": "Labor Utilization",
+      "colorScale": [
+        { "value": 0.0, "color": "#2196f3" },
+        { "value": 0.5, "color": "#4caf50" },
+        { "value": 0.75, "color": "#ff9800" },
+        { "value": 1.0, "color": "#f44336" }
+      ],
+      "legend": {
+        "min": 0,
+        "max": 100,
+        "unit": "%"
+      }
+    },
+    {
+      "id": "heat_throughput",
+      "type": "heat_throughput",
+      "name": "Throughput",
+      "colorScale": [
+        { "value": 0.0, "color": "#f44336" },
+        { "value": 0.5, "color": "#ffeb3b" },
+        { "value": 1.0, "color": "#4caf50" }
+      ],
+      "legend": {
+        "min": 0,
+        "max": 100,
+        "unit": "orders/hr"
+      }
+    }
+  ]
+}

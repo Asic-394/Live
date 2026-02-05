@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Entity } from '../../types';
 import { CoordinateMapper } from '../../utils/coordinates';
 import { getThemeConfig } from '../../utils/materials';
 import { useStore } from '../../state/store';
+import { GeometryPool } from '../../utils/GeometryPool';
+import { MaterialPool } from '../../utils/MaterialPool';
 import BlobShadow from './BlobShadow';
 
 interface Props {
@@ -26,34 +28,44 @@ function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
 
   // Theme token: selection and hover emissive intensity
   const emissiveIntensity = isSelected 
-    ? config.effects.selection.emissiveIntensity * 0.3  // Slightly reduced for entities
+    ? config.effects.selection.emissiveIntensity * 0.3
     : hovered 
     ? config.effects.hover.emissiveIntensity 
     : 0;
+
+  // Use pooled geometry
+  const geometry = useMemo(() => GeometryPool.getCylinder(1, 1, 6), []);
+
+  // Use pooled material with dynamic properties
+  const material = useMemo(() => {
+    const baseColor = isSelected ? colors.workerSelected : colors.worker;
+    const emissiveColor = isSelected || hovered ? colors.worker : '#000000';
+    
+    return MaterialPool.getStandardMaterial({
+      color: baseColor,
+      emissive: emissiveColor,
+      emissiveIntensity: emissiveIntensity * opacity,
+      roughness: config.materials.entity.roughness,
+      metalness: config.materials.entity.metalness,
+      transparent: isDimmed,
+      opacity: opacity,
+    });
+  }, [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]);
 
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
       <BlobShadow width={2.5} depth={2.5} opacity={isDimmed ? 0.15 : undefined} />
       
-      {/* Worker cylinder */}
+      {/* Worker cylinder - using pooled geometry and material */}
       <mesh
         position={[0, 3, 0]}
+        geometry={geometry}
+        material={material}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-      >
-        <cylinderGeometry args={[1, 1, 6]} />
-        <meshStandardMaterial
-          color={isSelected ? colors.workerSelected : colors.worker}
-          emissive={isSelected || hovered ? colors.worker : '#000000'}
-          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
-          roughness={config.materials.entity.roughness}
-          metalness={config.materials.entity.metalness}
-          transparent={isDimmed}
-          opacity={opacity}
-        />
-      </mesh>
+      />
     </group>
   );
 }
@@ -73,39 +85,54 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
     ? config.effects.hover.emissiveIntensity 
     : 0;
 
+  // Use pooled geometries
+  const bodyGeometry = useMemo(() => GeometryPool.getBox(4, 4, 6), []);
+  const forksGeometry = useMemo(() => GeometryPool.getBox(3, 1, 3), []);
+
+  // Use pooled materials
+  const bodyMaterial = useMemo(() => 
+    MaterialPool.getStandardMaterial({
+      color: isSelected ? colors.forkliftSelected : colors.forklift,
+      emissive: isSelected || hovered ? colors.forklift : '#000000',
+      emissiveIntensity: emissiveIntensity * opacity,
+      roughness: config.materials.entity.roughness * 0.85,
+      metalness: config.materials.entity.metalness * 2,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]
+  );
+
+  const forksMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: colors.forkliftForks,
+      roughness: 0.4,
+      metalness: 0.6,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [colors.forkliftForks, isDimmed, opacity]
+  );
+
   return (
     <group position={[pos.x, 0, pos.z]} onClick={onSelect}>
       {/* Blob shadow */}
       <BlobShadow width={5} depth={7} opacity={isDimmed ? 0.15 : undefined} />
       
-      {/* Body */}
+      {/* Body - using pooled geometry and material */}
       <mesh
         position={[0, 2, 0]}
+        geometry={bodyGeometry}
+        material={bodyMaterial}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-      >
-        <boxGeometry args={[4, 4, 6]} />
-        <meshStandardMaterial
-          color={isSelected ? colors.forkliftSelected : colors.forklift}
-          emissive={isSelected || hovered ? colors.forklift : '#000000'}
-          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
-          roughness={config.materials.entity.roughness * 0.85}
-          metalness={config.materials.entity.metalness * 2}
-          transparent={isDimmed}
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Forks */}
-      <mesh position={[0, 1, 4]}>
-        <boxGeometry args={[3, 1, 3]} />
-        <meshStandardMaterial 
-          color={colors.forkliftForks} 
-          roughness={0.4} 
-          metalness={0.6}
-          transparent={isDimmed}
-          opacity={opacity}
-        />
-      </mesh>
+      />
+      {/* Forks - using pooled geometry and material */}
+      <mesh 
+        position={[0, 1, 4]}
+        geometry={forksGeometry}
+        material={forksMaterial}
+      />
     </group>
   );
 }
@@ -125,29 +152,37 @@ function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
     ? config.effects.hover.emissiveIntensity * 0.8 
     : 0;
 
+  // Use pooled geometry
+  const geometry = useMemo(() => GeometryPool.getBox(4, 2, 4), []);
+
+  // Use pooled material
+  const material = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: isSelected ? colors.palletSelected : colors.pallet,
+      emissive: isSelected || hovered ? colors.pallet : '#000000',
+      emissiveIntensity: emissiveIntensity * opacity,
+      roughness: config.materials.entity.roughness * 1.4,
+      metalness: 0.0,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]
+  );
+
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
       <BlobShadow width={4.5} depth={4.5} opacity={isDimmed ? 0.15 : undefined} />
       
-      {/* Pallet */}
+      {/* Pallet - using pooled geometry and material */}
       <mesh
         position={[0, 1, 0]}
+        geometry={geometry}
+        material={material}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-      >
-        <boxGeometry args={[4, 2, 4]} />
-        <meshStandardMaterial
-          color={isSelected ? colors.palletSelected : colors.pallet}
-          emissive={isSelected || hovered ? colors.pallet : '#000000'}
-          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
-          roughness={config.materials.entity.roughness * 1.4}
-          metalness={0.0}
-          transparent={isDimmed}
-          opacity={opacity}
-        />
-      </mesh>
+      />
     </group>
   );
 }
@@ -167,6 +202,23 @@ function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshPro
     ? config.effects.hover.emissiveIntensity * 0.8 
     : 0;
 
+  // Use pooled geometry
+  const geometry = useMemo(() => GeometryPool.getBox(3, 3, 3), []);
+
+  // Use pooled material
+  const material = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: colors.inventory,
+      emissive: isSelected || hovered ? colors.inventory : '#000000',
+      emissiveIntensity: emissiveIntensity * opacity,
+      roughness: config.materials.entity.roughness * 1.1,
+      metalness: config.materials.entity.metalness * 1.3,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]
+  );
+
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow (only if on ground) */}
@@ -174,24 +226,15 @@ function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshPro
         <BlobShadow width={3.5} depth={3.5} opacity={isDimmed ? 0.15 : undefined} />
       )}
       
-      {/* Inventory box */}
+      {/* Inventory box - using pooled geometry and material */}
       <mesh
         position={[0, pos.y, 0]}
+        geometry={geometry}
+        material={material}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-      >
-        <boxGeometry args={[3, 3, 3]} />
-        <meshStandardMaterial
-          color={colors.inventory}
-          emissive={isSelected || hovered ? colors.inventory : '#000000'}
-          emissiveIntensity={emissiveIntensity * opacity}  // Theme token: hover/selection glow
-          roughness={config.materials.entity.roughness * 1.1}
-          metalness={config.materials.entity.metalness * 1.3}
-          transparent={isDimmed}
-          opacity={opacity}
-        />
-      </mesh>
+      />
     </group>
   );
 }
@@ -201,10 +244,16 @@ export default function EntityRenderer({ entities }: Props) {
   const selectedRack = useStore((state) => state.selectedRack);
   const selectEntity = useStore((state) => state.selectEntity);
   const selectRack = useStore((state) => state.selectRack);
+  const visibleEntityTypes = useStore((state) => state.visibleEntityTypes);
+
+  // Filter entities by visible types
+  const filteredEntities = entities.filter(entity => 
+    visibleEntityTypes.has(entity.entity_type)
+  );
 
   return (
     <group>
-      {entities.map((entity) => {
+      {filteredEntities.map((entity) => {
         const isSelected = entity.entity_id === selectedEntity;
         
         // Determine if entity should be dimmed

@@ -1,0 +1,23 @@
+{
+  "scenarioId": "scenario_dock_delay",
+  "overlays": {
+    "heat_congestion": [
+      { "zoneId": "Zone-A", "intensity": 0.28, "value": 0.36 },
+      { "zoneId": "Zone-B", "intensity": 0.45, "value": 0.55 },
+      { "zoneId": "Zone-C", "intensity": 0.52, "value": 0.62 },
+      { "zoneId": "Zone-D", "intensity": 0.68, "value": 0.75 }
+    ],
+    "heat_utilization": [
+      { "zoneId": "Zone-A", "intensity": 0.55, "value": 70 },
+      { "zoneId": "Zone-B", "intensity": 0.70, "value": 80 },
+      { "zoneId": "Zone-C", "intensity": 0.60, "value": 72 },
+      { "zoneId": "Zone-D", "intensity": 0.48, "value": 65 }
+    ],
+    "heat_throughput": [
+      { "zoneId": "Zone-A", "intensity": 0.50, "value": 11 },
+      { "zoneId": "Zone-B", "intensity": 0.72, "value": 19 },
+      { "zoneId": "Zone-C", "intensity": 0.60, "value": 15 },
+      { "zoneId": "Zone-D", "intensity": 0.38, "value": 8 }
+    ]
+  }
+}

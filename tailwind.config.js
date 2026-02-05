@@ -9,19 +9,24 @@ export default {
     extend: {
       colors: {
         warehouse: {
-          bg: '#0a0a0a',
-          panel: '#12141a',
-          panelHover: '#1a1d24',
+          bg: '#0d0f14',
+          panel: '#16181f',
+          panelHover: '#1c1f27',
           border: '#262a34',
           text: {
-            primary: '#e8eaed',
-            secondary: '#9ba1ac',
-            tertiary: '#6b7280',
+            primary: '#f9fafb',
+            secondary: '#d1d5db',
+            tertiary: '#9ca3af',
           },
           accent: {
-            cyan: '#22d3ee',
-            cyanMuted: '#06b6d4',
-            blue: '#3b82f6',
+            primary: '#60a5fa',
+            secondary: '#22d3ee',
+            tertiary: '#818cf8',
+          },
+          status: {
+            success: '#34d399',
+            warning: '#fbbf24',
+            critical: '#f87171',
           }
         }
       },

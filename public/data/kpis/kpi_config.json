@@ -1,0 +1,52 @@
+{
+  "kpis": [
+    {
+      "id": "throughput",
+      "label": "Throughput",
+      "description": "Orders processed per hour",
+      "unit": "orders/hr",
+      "overlayType": "heat_throughput",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 30 },
+        "watch": { "operator": "below", "value": 45 },
+        "normal": { "operator": "above", "value": 45 }
+      }
+    },
+    {
+      "id": "labor_utilization",
+      "label": "Labor Utilization",
+      "description": "Percentage of worker time active",
+      "unit": "%",
+      "overlayType": "heat_utilization",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 60 },
+        "watch": { "operator": "below", "value": 75 },
+        "normal": { "operator": "between", "value": [75, 90] }
+      }
+    },
+    {
+      "id": "orders_at_risk",
+      "label": "Orders at Risk",
+      "description": "Orders likely to miss SLA",
+      "unit": "orders",
+      "overlayType": "heat_congestion",
+      "thresholds": {
+        "critical": { "operator": "above", "value": 10 },
+        "watch": { "operator": "above", "value": 5 },
+        "normal": { "operator": "below", "value": 5 }
+      }
+    },
+    {
+      "id": "zone_congestion",
+      "label": "Zone Congestion",
+      "description": "Worker density across zones",
+      "unit": "density",
+      "overlayType": "heat_congestion",
+      "thresholds": {
+        "critical": { "operator": "above", "value": 0.8 },
+        "watch": { "operator": "above", "value": 0.65 },
+        "normal": { "operator": "below", "value": 0.65 }
+      }
+    }
+  ]
+}

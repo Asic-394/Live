@@ -6,7 +6,8 @@ import type { WarehouseLayout, WarehouseLayoutElement } from '../../types';
 import { CoordinateMapper } from '../../utils/coordinates';
 import { useStore } from '../../state/store';
 import { useSceneTheme } from '../../utils/useSceneTheme';
-import RackFrame from './RackFrame';
+import { getLabelOpacity } from '../../hooks/useLOD';
+import OptimizedRackFrame from './OptimizedRackFrame';
 import BlobShadow from './BlobShadow';
 import RackInventory from './RackInventory';
 
@@ -152,23 +153,10 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
     setCameraDistance(distance);
   });
 
-  // Calculate label opacity based on camera distance
-  const getZoneLabelOpacity = () => {
-    // Show zone labels when zoomed out (distance > 150), fade out when closer
-    if (cameraDistance > 200) return 0.8;
-    if (cameraDistance > 150) return 0.6;
-    if (cameraDistance > 100) return Math.max(0, (cameraDistance - 100) / 50 * 0.6);
-    return 0;
-  };
-
-  const getAisleLabelOpacity = () => {
-    // Keep aisle labels visible in mid-range, fade when too far or too close
-    if (cameraDistance > 300) return 0.3;
-    if (cameraDistance > 200) return 0.5;
-    if (cameraDistance > 80) return 0.7;
-    if (cameraDistance > 40) return Math.max(0, (cameraDistance - 40) / 40 * 0.7);
-    return 0;
-  };
+  // Calculate label opacity based on camera distance using LOD system
+  const zoneLabelOpacity = getLabelOpacity(cameraDistance, 'zone');
+  const aisleLabelOpacity = getLabelOpacity(cameraDistance, 'aisle');
+  const rackLabelOpacity = getLabelOpacity(cameraDistance, 'rack');
 
   return (
     <group>
@@ -242,23 +230,25 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               />
             </mesh>
 
-            {/* Zone label with LOD-based opacity */}
-            <Text
-              position={[pos.x, 0.5, pos.z]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={4}
-              color={themeConfig.colors.zoneLabelColor}
-              anchorX="center"
-              anchorY="middle"
-              fillOpacity={isHovered ? 1.0 : getZoneLabelOpacity()}
-            >
-              {zone.name || zone.element_id}
-            </Text>
+            {/* Zone label with LOD-based opacity - only render if visible */}
+            {(zoneLabelOpacity > 0 || isHovered) ? (
+              <Text
+                position={[pos.x, 0.5, pos.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                fontSize={4}
+                color={themeConfig.colors.zoneLabelColor}
+                anchorX="center"
+                anchorY="middle"
+                fillOpacity={isHovered ? 1.0 : zoneLabelOpacity}
+              >
+                {zone.name || zone.element_id}
+              </Text>
+            ) : null}
 
             {/* Receiving Zone: Staging Pallet Markers */}
-            {isReceiving && (
+            {isReceiving ? (
               <>
-                {[0, 1, 2].map((row) => 
+                {[0, 1, 2].flatMap((row) => 
                   [0, 1, 2, 3].map((col) => {
                     const markerX = pos.x - zone.width / 3 + col * 15;
                     const markerZ = pos.z - zone.depth / 4 + row * 12;
@@ -271,10 +261,10 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   })
                 )}
               </>
-            )}
+            ) : null}
 
             {/* Storage/Picking Zone: Workstation Markers */}
-            {(isPicking || isStoragePicking) && !isStaging && !isReceiving && (
+            {(isPicking || isStoragePicking) && !isStaging && !isReceiving ? (
               <>
                 {[0, 1, 2, 3, 4].map((i) => {
                   const stationX = pos.x - zone.width / 2.5 + i * (zone.width / 6);
@@ -297,10 +287,10 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   );
                 })}
               </>
-            )}
+            ) : null}
 
             {/* Staging Zone: Queue Line Markings */}
-            {isStaging && (
+            {isStaging ? (
               <>
                 {[0, 1, 2].map((line) => {
                   const lineZ = pos.z - zone.depth / 4 + line * 15;
@@ -317,7 +307,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   <lineBasicMaterial color={themeConfig.colors.zoneStagingOutline} linewidth={2} />
                 </lineSegments>
               </>
-            )}
+            ) : null}
           </group>
         );
       })}
@@ -347,7 +337,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             </mesh>
 
             {/* Directional arrows */}
-            {isMainAisle && [0, 1, 2, 3, 4].map((i) => {
+            {isMainAisle ? [0, 1, 2, 3, 4].map((i) => {
               const arrowZ = pos.z - aisle.depth / 3 + i * 15;
               return (
                 <group key={`arrow-${i}`}>
@@ -367,20 +357,22 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   </mesh>
                 </group>
               );
-            })}
+            }) : null}
 
-            {/* Aisle label with LOD-based opacity */}
-            <Text
-              position={[pos.x, 0.3, pos.z]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={2.5}
-              color={themeConfig.colors.aisleLabelColor}
-              anchorX="center"
-              anchorY="middle"
-              fillOpacity={getAisleLabelOpacity()}
-            >
-              {aisle.name || aisle.element_id}
-            </Text>
+            {/* Aisle label with LOD-based opacity - only render if visible */}
+            {aisleLabelOpacity > 0 ? (
+              <Text
+                position={[pos.x, 0.3, pos.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                fontSize={2.5}
+                color={themeConfig.colors.aisleLabelColor}
+                anchorX="center"
+                anchorY="middle"
+                fillOpacity={aisleLabelOpacity}
+              >
+                {aisle.name || aisle.element_id}
+              </Text>
+            ) : null}
           </group>
         );
       })}
@@ -392,6 +384,9 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         const isSelected = selectedRack === rack.element_id;
         const isHovered = hoveredRack === rack.element_id;
         const isDimmed = Boolean(selectedRack && !isSelected && !isHovered);
+        
+        // Convert rotation from degrees to radians (rotation around Y-axis)
+        const rotationY = ((rack.rotation || 0) * Math.PI) / 180;
         
         // Refined color palette for premium look with dimming
         const baseDimFactor = isDimmed ? 0.4 : 1.0;
@@ -415,6 +410,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
           <group 
             key={rack.element_id}
             position={[pos.x, 0, pos.z]}
+            rotation={[0, rotationY, 0]}
             onClick={(e) => {
               e.stopPropagation();
               selectRack(isSelected ? null : rack.element_id);
@@ -444,8 +440,8 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               opacity={isDimmed ? themeConfig.shadows.blob.opacity * 0.6 : themeConfig.shadows.blob.opacity}
             />
             
-            {/* Rack frame structure - dimming applied via material properties */}
-            <RackFrame
+            {/* Optimized rack frame structure - single merged mesh per rack */}
+            <OptimizedRackFrame
               width={rack.width}
               height={height}
               depth={rack.depth}
@@ -457,6 +453,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
 
             {/* Inventory boxes on shelves */}
             <RackInventory
+              rackId={rack.element_id}
               width={rack.width}
               height={height}
               depth={rack.depth}
@@ -466,7 +463,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             />
 
             {/* Prominent outline effect when selected/hovered */}
-            {(isSelected || isHovered) && (
+            {(isSelected || isHovered) ? (
               <lineSegments position={[0, height / 2, 0]}>
                 <edgesGeometry args={[new THREE.BoxGeometry(rack.width, height, rack.depth)]} />
                 <lineBasicMaterial 
@@ -476,19 +473,21 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                   opacity={isSelected ? 1.0 : 0.9}
                 />
               </lineSegments>
-            )}
+            ) : null}
 
-            {/* Rack label with dimming */}
-            <Text
-              position={[0, height + 1, 0]}
-              fontSize={1.5}
-              color={themeConfig.colors.rackLabelColor}
-              anchorX="center"
-              anchorY="middle"
-              fillOpacity={isDimmed ? 0.4 : 1.0}
-            >
-              {rack.name || rack.element_id}
-            </Text>
+            {/* Rack label with dimming and LOD - only render if visible */}
+            {rackLabelOpacity > 0 ? (
+              <Text
+                position={[0, height + 1, 0]}
+                fontSize={1.5}
+                color={themeConfig.colors.rackLabelColor}
+                anchorX="center"
+                anchorY="middle"
+                fillOpacity={isDimmed ? 0.4 : rackLabelOpacity}
+              >
+                {rack.name || rack.element_id}
+              </Text>
+            ) : null}
           </group>
         );
       })}

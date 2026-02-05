@@ -1,0 +1,39 @@
+{
+  "scenarioId": "scenario_normal",
+  "timestamp": "2026-04-15T13:00:00Z",
+  "kpis": [
+    { "id": "throughput", "value": 52, "trend": 3 },
+    { "id": "labor_utilization", "value": 78, "trend": -2 },
+    { "id": "orders_at_risk", "value": 2, "trend": -1 },
+    { "id": "zone_congestion", "value": 0.45, "trend": 0 }
+  ],
+  "drillDowns": {
+    "throughput": {
+      "drivers": [
+        { "label": "Zone-B", "value": 22, "contribution": 42, "zone": "Zone-B" },
+        { "label": "Zone-C", "value": 18, "contribution": 35, "zone": "Zone-C" },
+        { "label": "Zone-A", "value": 12, "contribution": 23, "zone": "Zone-A" }
+      ]
+    },
+    "labor_utilization": {
+      "drivers": [
+        { "label": "Zone-B", "value": 85, "contribution": 38, "zone": "Zone-B" },
+        { "label": "Zone-C", "value": 76, "contribution": 32, "zone": "Zone-C" },
+        { "label": "Zone-A", "value": 72, "contribution": 30, "zone": "Zone-A" }
+      ]
+    },
+    "orders_at_risk": {
+      "drivers": [
+        { "label": "Zone-C", "value": 1, "contribution": 50, "zone": "Zone-C" },
+        { "label": "Zone-D", "value": 1, "contribution": 50, "zone": "Zone-D" }
+      ]
+    },
+    "zone_congestion": {
+      "drivers": [
+        { "label": "Zone-B", "value": 0.52, "contribution": 40, "zone": "Zone-B" },
+        { "label": "Zone-C", "value": 0.48, "contribution": 35, "zone": "Zone-C" },
+        { "label": "Zone-A", "value": 0.35, "contribution": 25, "zone": "Zone-A" }
+      ]
+    }
+  }
+}

@@ -52,7 +52,13 @@ Slice 1: Foundation & Basic Spatial Monitoring has been successfully implemented
 ### ✅ User Interface
 - **Dataset Selector** - Dropdown to switch between scenarios
 - **Reset Button** - Resets camera and reloads current dataset
+- **Entity Filter Control** - Filter entities by type (workers/forklifts/pallets/inventory)
+  - Checkboxes for each entity type with icons and counts
+  - Show All / Hide All toggle button
+  - Real-time count badges per type
+  - Visual feedback when types are hidden
 - **Status Bar** - Shows current dataset name, entity count, and timestamp
+  - Shows "visible / total" count when filtering is active
 - **Entity Detail Panel** - Shows selected entity information:
   - Entity ID and type
   - Status and current task
@@ -199,6 +205,17 @@ python3 -m http.server 8080
 - Clean error messages for malformed CSVs ✅
 - Offline operation confirmed ✅
 
+## Recent Updates
+
+### February 5, 2026 - Entity Filtering Implementation
+- ✅ Added entity filtering by type (workers, forklifts, pallets, inventory)
+- ✅ Created EntityFilterControl component with checkboxes and counts
+- ✅ Enhanced StatusBar to show filtered vs total counts
+- ✅ Integrated filtering into EntityRenderer
+- ✅ **Slice 1 now 100% complete** - all BuildPlan items delivered
+
+See `ENTITY_FILTER_IMPLEMENTATION.md` for detailed documentation.
+
 ## Known Issues / Limitations
 
 ### Slice 1 Scope
@@ -271,6 +288,7 @@ For questions or issues:
 
 ---
 
-**Implementation Date:** February 2, 2026
-**Status:** ✅ Complete and ready for testing
+**Implementation Date:** February 2, 2026  
+**Last Updated:** February 5, 2026 (Entity Filtering)  
+**Status:** ✅ 100% Complete - All BuildPlan Slice 1 items delivered  
 **Next Milestone:** Slice 2 - Health Monitoring & Spatial Overlays

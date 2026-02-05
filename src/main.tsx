@@ -12,7 +12,8 @@ if (theme === 'dark') {
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // Temporarily disabled StrictMode - it can cause THREE.js objects to accumulate in development
+  // <React.StrictMode>
     <App />
-  </React.StrictMode>,
+  // </React.StrictMode>,
 )

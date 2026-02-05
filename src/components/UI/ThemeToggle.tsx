@@ -11,7 +11,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="bg-white/90 dark:bg-warehouse-panel/90 backdrop-blur-md text-gray-900 dark:text-warehouse-text-primary px-3 py-2.5 rounded-lg shadow-lg border border-gray-300 dark:border-warehouse-border hover:bg-gray-100 dark:hover:bg-warehouse-panelHover hover:border-gray-400 dark:hover:border-warehouse-border/70 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-warehouse-accent-cyan/50 transition-all duration-200 flex items-center gap-2"
+      className="glass-panel px-3 py-2.5 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-200 flex items-center gap-2"
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >

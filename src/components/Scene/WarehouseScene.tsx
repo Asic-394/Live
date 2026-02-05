@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, OrthographicCamera, ContactShadows } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useStore } from '../../state/store';
 import { useSceneTheme } from '../../utils/useSceneTheme';
+import { useCameraAnimation } from '../../hooks/useCameraAnimation';
 import WarehouseLayoutComponent from './WarehouseLayout';
 import EntityRenderer from './EntityRenderer';
+import OverlayRenderer from './OverlayRenderer';
+import ZoneHighlighter from './ZoneHighlighter';
+import InstancedInventoryBoxes from './InstancedInventoryBoxes';
 import { CoordinateMapper } from '../../utils/coordinates';
 
 interface WarehouseSceneProps {
@@ -24,10 +28,15 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
   const { camera, gl } = useThree();
   const orbitControlsRef = useRef<any>(null);
 
+  // Enable camera animation for zone focusing (Slice 2)
+  useCameraAnimation(orbitControlsRef);
+
   useEffect(() => {
     if (orbitControlsRef.current && warehouseLayout) {
       const controls = orbitControlsRef.current;
-      controlsRef.current = controls;
+      if (controlsRef && 'current' in controlsRef) {
+        (controlsRef as any).current = controls;
+      }
 
       const bounds = warehouseLayout.bounds;
       const centerX = (bounds.minX + bounds.maxX) / 2;
@@ -130,7 +139,9 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
         duration: 0.9,
         ease: 'power2.inOut',
         onUpdate: () => {
-          cameraObj.updateProjectionMatrix();
+          if ('updateProjectionMatrix' in cameraObj && typeof cameraObj.updateProjectionMatrix === 'function') {
+            (cameraObj as any).updateProjectionMatrix();
+          }
           controls.update();
         },
       });
@@ -140,13 +151,6 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
   if (!warehouseLayout) {
     return null;
   }
-
-  const bounds = warehouseLayout.bounds;
-  const floorWidth = (bounds.maxX - bounds.minX) * 1.2;
-  const floorDepth = (bounds.maxY - bounds.minY) * 1.2;
-  const centerX = (bounds.minX + bounds.maxX) / 2;
-  const centerZ = -(bounds.minY + bounds.maxY) / 2;
-  const gridOpacity = Math.min(0.18, Math.max(0.08, theme.shadows.contact.opacity * 0.35));
 
   return (
     <>
@@ -188,8 +192,8 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
         intensity={theme.lighting.keyLight.intensity}
         color={theme.lighting.keyLight.color}
         castShadow={theme.lighting.keyLight.castShadow && theme.shadows.enabled}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-far={500}
         shadow-camera-left={-200}
         shadow-camera-right={200}
@@ -216,60 +220,6 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
         groundColor={theme.lighting.hemisphere.groundColor}
       />
 
-      <mesh
-        position={[centerX, -0.25, centerZ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[floorWidth * 2, floorDepth * 2]} />
-        <meshStandardMaterial
-          color={theme.colors.background}
-          roughness={1.0}
-          metalness={0}
-        />
-      </mesh>
-
-      <mesh
-        position={[centerX, 0.0, centerZ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[floorWidth, floorDepth]} />
-        <meshStandardMaterial
-          color={theme.colors.floorBase}
-          roughness={theme.materials.floor.roughness}
-          metalness={theme.materials.floor.metalness}
-        />
-      </mesh>
-
-      <mesh
-        position={[centerX, 0.003, centerZ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-        <planeGeometry args={[floorWidth, floorDepth]} />
-        <meshStandardMaterial
-          color={theme.colors.floorGrid}
-          transparent
-          opacity={gridOpacity}
-          roughness={0.9}
-          polygonOffset
-          polygonOffsetFactor={-1}
-          polygonOffsetUnits={-1}
-        />
-      </mesh>
-
-      {theme.shadows.enabled && (
-        <ContactShadows
-          position={[centerX, 0.006, centerZ]}
-          opacity={theme.shadows.contact.opacity}
-          scale={Math.max(floorWidth, floorDepth)}
-          blur={theme.shadows.contact.blur}
-          far={50}
-          resolution={512}
-          color="#000000"
-        />
-      )}
-
       {theme.fog.enabled && (
         <fog
           attach="fog"
@@ -279,6 +229,13 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
 
       <WarehouseLayoutComponent layout={warehouseLayout} />
       <EntityRenderer entities={entities} />
+      
+      {/* Instanced inventory boxes for performance */}
+      <InstancedInventoryBoxes />
+      
+      {/* Slice 2: Health Monitoring Components */}
+      <OverlayRenderer />
+      <ZoneHighlighter />
     </>
   );
 }
@@ -291,11 +248,14 @@ export default function WarehouseScene({ controlsRef }: WarehouseSceneProps) {
       shadows
       className="w-full h-full"
       gl={{
-        antialias: true,
+        antialias: false,  // Disabled for performance - can enable FXAA post-processing if needed
         alpha: false,
         powerPreference: 'high-performance',
+        stencil: false,  // Disable stencil buffer for performance
+        depth: true,
       }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}  // Limit pixel ratio to 1.5 max for better performance
+      frameloop="always"  // Always render for interactive scenes
     >
       <color attach="background" args={[theme.renderer.background]} />
       <SceneContent controlsRef={controlsRef} />

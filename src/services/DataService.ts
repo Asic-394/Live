@@ -3,10 +3,13 @@ import type {
   WarehouseLayoutElement,
   Entity,
   Dataset,
+  Box,
+  BoxItem,
 } from '../types';
 import { CSVParser } from '../data/parsers/CSVParser';
 import { SchemaValidator } from '../data/validators/SchemaValidator';
 import { CoordinateMapper } from '../utils/coordinates';
+import { HierarchyBuilder } from '../utils/HierarchyBuilder';
 
 export class DataService {
   private static datasets: Dataset[] = [
@@ -141,9 +144,117 @@ export class DataService {
     // Load layout first
     const layout = await this.loadWarehouseLayout(dataset.layoutPath);
     
+    // Build hierarchy relationships
+    const layoutWithHierarchy = HierarchyBuilder.buildHierarchy(layout);
+    
     // Then load entities (with layout for validation)
-    const entities = await this.loadWarehouseState(dataset.statePath, layout);
+    const entities = await this.loadWarehouseState(dataset.statePath, layoutWithHierarchy);
 
-    return { layout, entities };
+    return { layout: layoutWithHierarchy, entities };
+  }
+
+  /**
+   * Load inventory boxes from CSV
+   */
+  static async loadInventoryBoxes(datasetId: string): Promise<Box[]> {
+    const boxesPath = `/datasets/${datasetId}/inventory_boxes.csv`;
+    
+    console.log('📂 Loading inventory boxes from:', boxesPath);
+    
+    try {
+      const parseResult = await CSVParser.parseFile<any>(boxesPath);
+      
+      console.log('📋 Parse result:', { 
+        rowCount: parseResult.data.length, 
+        errors: parseResult.errors.length 
+      });
+      
+      if (parseResult.errors.length > 0) {
+        console.warn('⚠️ Inventory boxes CSV parse warnings:', parseResult.errors);
+      }
+
+      const boxes: Box[] = parseResult.data.map((row) => ({
+        box_id: row.box_id,
+        rack_id: row.rack_id,
+        level: parseInt(row.level),
+        position: parseInt(row.position),
+        x: parseFloat(row.x),
+        y: parseFloat(row.y),
+        z: parseFloat(row.z),
+        status: row.status,
+        items: [], // Will be populated by loadInventoryItems
+        capacity_used: parseInt(row.capacity_used),
+        last_updated: row.last_updated,
+      }));
+
+      console.log('✅ Successfully parsed boxes:', boxes.length);
+      return boxes;
+    } catch (error) {
+      console.error('❌ Failed to load inventory boxes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Load inventory items from CSV and associate with boxes
+   */
+  static async loadInventoryItems(datasetId: string): Promise<Map<string, BoxItem[]>> {
+    const itemsPath = `/datasets/${datasetId}/inventory_items.csv`;
+    const itemsMap = new Map<string, BoxItem[]>();
+    
+    try {
+      const parseResult = await CSVParser.parseFile<any>(itemsPath);
+      
+      if (parseResult.errors.length > 0) {
+        console.warn('Inventory items CSV parse warnings:', parseResult.errors);
+      }
+
+      for (const row of parseResult.data) {
+        const boxId = row.box_id;
+        const item: BoxItem = {
+          sku: row.sku,
+          product_name: row.product_name,
+          quantity: parseInt(row.quantity),
+          unit: row.unit,
+          category: row.category,
+          weight: row.weight ? parseFloat(row.weight) : undefined,
+          received_date: row.received_date,
+        };
+
+        if (!itemsMap.has(boxId)) {
+          itemsMap.set(boxId, []);
+        }
+        itemsMap.get(boxId)!.push(item);
+      }
+
+      return itemsMap;
+    } catch (error) {
+      console.warn('Failed to load inventory items:', error);
+      return new Map();
+    }
+  }
+
+  /**
+   * Load complete inventory data (boxes + items)
+   */
+  static async loadInventoryData(datasetId: string): Promise<{ boxes: Box[]; items: Map<string, BoxItem[]> }> {
+    console.log('🚀 DataService.loadInventoryData called with datasetId:', datasetId);
+    
+    console.log('📦 Step 1: Loading boxes...');
+    const boxes = await this.loadInventoryBoxes(datasetId);
+    console.log(`✅ Step 1 complete: Loaded ${boxes.length} boxes`);
+    
+    console.log('📦 Step 2: Loading items...');
+    const items = await this.loadInventoryItems(datasetId);
+    console.log(`✅ Step 2 complete: Loaded ${items.size} item groups`);
+
+    // Associate items with boxes
+    console.log('🔗 Step 3: Associating items with boxes...');
+    for (const box of boxes) {
+      box.items = items.get(box.box_id) || [];
+    }
+    console.log('✅ Step 3 complete');
+
+    return { boxes, items };
   }
 }

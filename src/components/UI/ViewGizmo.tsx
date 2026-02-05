@@ -1,6 +1,7 @@
 import { useStore } from '../../state/store';
 import type { CameraMode } from '../../types';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
@@ -12,7 +13,26 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
   const cameraMode = useStore((state) => state.cameraMode);
   const setCameraMode = useStore((state) => state.setCameraMode);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
+  const theme = useStore((state) => state.theme);
   const [hoveredView, setHoveredView] = useState<string | null>(null);
+  const [controlsReady, setControlsReady] = useState(false);
+
+  // Track when controls become available (poll since refs don't trigger re-renders)
+  useEffect(() => {
+    const checkControls = () => {
+      if (controlsRef?.current && !controlsReady) {
+        setControlsReady(true);
+      }
+    };
+
+    // Check immediately
+    checkControls();
+
+    // Poll every 100ms until controls are ready
+    const interval = setInterval(checkControls, 100);
+
+    return () => clearInterval(interval);
+  }, [controlsRef, controlsReady]);
 
   const handleCameraMode = (mode: CameraMode) => {
     setCameraMode(mode);
@@ -111,12 +131,35 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
     }
   };
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+  // Failsafe: Always render the UI, even if controls aren't ready
+  // Use portal to render directly to body, bypassing any parent containers
+  const gizmoUI = (
+    <div 
+      className="fixed bottom-6 right-6 flex flex-col gap-3" 
+      style={{ 
+        zIndex: 99999,
+        isolation: 'isolate', 
+        pointerEvents: 'auto',
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px'
+      }}
+    >
       {/* Main Gizmo Container */}
-      <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg overflow-hidden">
+      <div 
+        className="rounded-xl overflow-hidden shadow-2xl"
+        style={{
+          backgroundColor: theme === 'dark' ? '#16181f' : '#ffffff',
+          border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          minWidth: '160px',
+          backdropFilter: 'blur(20px)'
+        }}
+      >
         {/* 3D Orientation Cube */}
-        <div className="relative p-3 border-b border-gray-300 dark:border-gray-700">
+        <div 
+          className="relative p-3 border-b"
+          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
+        >
           <OrientationCube controlsRef={controlsRef} />
         </div>
 
@@ -127,13 +170,15 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
               onClick={() => handleViewPreset('map')}
               onMouseEnter={() => setHoveredView('map')}
               onMouseLeave={() => setHoveredView(null)}
-              className={`
-                w-full px-3 py-2 text-xs font-medium rounded transition-all flex items-center justify-center gap-2
-                ${hoveredView === 'map'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                }
-              `}
+              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: hoveredView === 'map' 
+                  ? '#3b82f6' 
+                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: hoveredView === 'map' 
+                  ? 'white' 
+                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
+              }}
             >
               <span className="text-sm">🗺️</span>
               <span>Map View</span>
@@ -143,13 +188,15 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
               onClick={() => handleViewPreset('birds-eye')}
               onMouseEnter={() => setHoveredView('birds-eye')}
               onMouseLeave={() => setHoveredView(null)}
-              className={`
-                w-full px-3 py-2 text-xs font-medium rounded transition-all flex items-center justify-center gap-2
-                ${hoveredView === 'birds-eye'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-                }
-              `}
+              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: hoveredView === 'birds-eye' 
+                  ? '#3b82f6' 
+                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: hoveredView === 'birds-eye' 
+                  ? 'white' 
+                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
+              }}
             >
               <span className="text-sm">🦅</span>
               <span>Birds Eye</span>
@@ -158,17 +205,22 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
         </div>
 
         {/* Camera Mode Toggle */}
-        <div className="p-2 border-t border-gray-300 dark:border-gray-700">
+        <div 
+          className="p-2 border-t"
+          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
+        >
           <div className="flex gap-1">
             <button
               onClick={() => handleCameraMode('orthographic')}
-              className={`
-                flex-1 flex flex-col items-center justify-center py-2 px-2 rounded transition-all
-                ${cameraMode === 'orthographic'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                }
-              `}
+              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
+              style={{
+                backgroundColor: cameraMode === 'orthographic' 
+                  ? '#3b82f6' 
+                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: cameraMode === 'orthographic' 
+                  ? 'white' 
+                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
+              }}
               title="Orthographic projection"
             >
               <svg 
@@ -188,13 +240,15 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
             
             <button
               onClick={() => handleCameraMode('perspective')}
-              className={`
-                flex-1 flex flex-col items-center justify-center py-2 px-2 rounded transition-all
-                ${cameraMode === 'perspective'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                }
-              `}
+              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
+              style={{
+                backgroundColor: cameraMode === 'perspective' 
+                  ? '#3b82f6' 
+                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: cameraMode === 'perspective' 
+                  ? 'white' 
+                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
+              }}
               title="Perspective projection"
             >
               <svg 
@@ -216,6 +270,8 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
       </div>
     </div>
   );
+
+  return createPortal(gizmoUI, document.body);
 }
 
 interface OrientationCubeProps {
@@ -224,9 +280,10 @@ interface OrientationCubeProps {
 
 function OrientationCube({ controlsRef }: OrientationCubeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const theme = useStore((state) => state.theme);
 
   useEffect(() => {
-    if (!canvasRef.current || !controlsRef.current) return;
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -236,8 +293,21 @@ function OrientationCube({ controlsRef }: OrientationCubeProps) {
     canvas.width = size;
     canvas.height = size;
 
+    let animationFrameId: number;
+
     const animate = () => {
-      if (!controlsRef.current?.object) return;
+      // Always draw something, even if controls not ready
+      if (!controlsRef.current?.object) {
+        // Draw a simple placeholder when controls aren't ready
+        ctx.clearRect(0, 0, size, size);
+        ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('...', size / 2, size / 2);
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
 
       const camera = controlsRef.current.object;
       const cameraDir = new THREE.Vector3();
@@ -290,14 +360,26 @@ function OrientationCube({ controlsRef }: OrientationCubeProps) {
 
       ctx.globalAlpha = 1.0;
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
-  }, [controlsRef]);
+
+    // Cleanup function
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [controlsRef, theme]);
 
   return (
-    <div className="flex items-center justify-center">
+    <div 
+      className="flex items-center justify-center rounded-lg"
+      style={{
+        backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+      }}
+    >
       <canvas
         ref={canvasRef}
         className="w-20 h-20"

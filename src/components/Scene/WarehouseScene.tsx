@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
@@ -12,9 +12,72 @@ import OverlayRenderer from './OverlayRenderer';
 import ZoneHighlighter from './ZoneHighlighter';
 import InstancedInventoryBoxes from './InstancedInventoryBoxes';
 import { CoordinateMapper } from '../../utils/coordinates';
+import type { WarehouseLayout } from '../../types';
 
 interface WarehouseSceneProps {
   controlsRef: React.RefObject<any>;
+}
+
+interface DirectionalLightWithShadowsProps {
+  warehouseLayout: WarehouseLayout;
+  useRealShadows: boolean;
+  position: [number, number, number];
+  intensity: number;
+  color: string;
+}
+
+function DirectionalLightWithShadows({ 
+  warehouseLayout, 
+  useRealShadows, 
+  position, 
+  intensity, 
+  color 
+}: DirectionalLightWithShadowsProps) {
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+
+  useEffect(() => {
+    if (!lightRef.current || !useRealShadows) return;
+
+    const light = lightRef.current;
+    
+    // Calculate warehouse center in Three.js coordinates
+    const centerX = (warehouseLayout.bounds.minX + warehouseLayout.bounds.maxX) / 2;
+    const centerZ = -(warehouseLayout.bounds.minY + warehouseLayout.bounds.maxY) / 2;
+    
+    // Set light target to warehouse center
+    light.target.position.set(centerX, 0, centerZ);
+    light.target.updateMatrixWorld();
+    
+    // Calculate shadow camera size to cover entire warehouse
+    const width = warehouseLayout.bounds.maxX - warehouseLayout.bounds.minX;
+    const depth = warehouseLayout.bounds.maxY - warehouseLayout.bounds.minY;
+    const maxSize = Math.max(width, depth) / 2 + 100; // Add padding
+    
+    // Configure shadow camera
+    if (light.shadow.camera instanceof THREE.OrthographicCamera) {
+      light.shadow.camera.left = -maxSize;
+      light.shadow.camera.right = maxSize;
+      light.shadow.camera.top = maxSize;
+      light.shadow.camera.bottom = -maxSize;
+      light.shadow.camera.near = 0.5;
+      light.shadow.camera.far = 1000;
+      light.shadow.camera.updateProjectionMatrix();
+    }
+  }, [warehouseLayout, useRealShadows]);
+
+  return (
+    <directionalLight
+      ref={lightRef}
+      position={position}
+      intensity={intensity}
+      color={color}
+      castShadow={useRealShadows}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
+      shadow-bias={-0.001}
+      shadow-normalBias={0.02}
+    />
+  );
 }
 
 function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
@@ -24,6 +87,7 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
   const selectedRack = useStore((state) => state.selectedRack);
   const cameraReset = useStore((state) => state.cameraReset);
   const cameraMode = useStore((state) => state.cameraMode);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const theme = useSceneTheme();
   const { camera, gl } = useThree();
   const orbitControlsRef = useRef<any>(null);
@@ -187,19 +251,12 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
         color={theme.lighting.ambient.color}
       />
 
-      <directionalLight
+      <DirectionalLightWithShadows
+        warehouseLayout={warehouseLayout}
+        useRealShadows={useRealShadows}
         position={theme.lighting.keyLight.position}
         intensity={theme.lighting.keyLight.intensity}
         color={theme.lighting.keyLight.color}
-        castShadow={theme.lighting.keyLight.castShadow && theme.shadows.enabled}
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-far={500}
-        shadow-camera-left={-200}
-        shadow-camera-right={200}
-        shadow-camera-top={200}
-        shadow-camera-bottom={-200}
-        shadow-bias={-0.0001}
       />
 
       <directionalLight
@@ -256,6 +313,10 @@ export default function WarehouseScene({ controlsRef }: WarehouseSceneProps) {
       }}
       dpr={[1, 1.5]}  // Limit pixel ratio to 1.5 max for better performance
       frameloop="always"  // Always render for interactive scenes
+      onCreated={({ gl }) => {
+        gl.shadowMap.enabled = true;
+        gl.shadowMap.type = THREE.PCFSoftShadowMap; // Better quality soft shadows
+      }}
     >
       <color attach="background" args={[theme.renderer.background]} />
       <SceneContent controlsRef={controlsRef} />

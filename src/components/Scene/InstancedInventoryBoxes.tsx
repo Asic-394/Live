@@ -21,6 +21,7 @@ export default function InstancedInventoryBoxes() {
   const selectedRack = useStore((state) => state.selectedRack);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const config = getThemeConfig(theme);
   const colors = config.colors;
   const { raycaster, pointer, camera, gl } = useThree();
@@ -358,6 +359,7 @@ export default function InstancedInventoryBoxes() {
           ref={storedRef}
           args={[boxGeometry, materials.stored, boxGroups.stored.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.stored.length * 3), 3]} />
@@ -370,6 +372,7 @@ export default function InstancedInventoryBoxes() {
           ref={stagedRef}
           args={[boxGeometry, materials.staged, boxGroups.staged.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.staged.length * 3), 3]} />
@@ -382,6 +385,7 @@ export default function InstancedInventoryBoxes() {
           ref={transitRef}
           args={[boxGeometry, materials.in_transit, boxGroups.in_transit.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.in_transit.length * 3), 3]} />
@@ -394,6 +398,7 @@ export default function InstancedInventoryBoxes() {
           ref={emptyRef}
           args={[boxGeometry, materials.empty, boxGroups.empty.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.empty.length * 3), 3]} />
@@ -406,6 +411,7 @@ export default function InstancedInventoryBoxes() {
           ref={selectedRef}
           args={[boxGeometry, materials.selected, boxGroups.selected.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.selected.length * 3), 3]} />
@@ -418,6 +424,7 @@ export default function InstancedInventoryBoxes() {
           ref={hoveredRef}
           args={[boxGeometry, materials.hovered, boxGroups.hovered.length]}
           onClick={handleClick}
+          castShadow={useRealShadows}
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.hovered.length * 3), 3]} />

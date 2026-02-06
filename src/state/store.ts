@@ -32,7 +32,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   // UI state
   theme: getInitialTheme(),
-  visibleEntityTypes: new Set(['worker', 'forklift', 'pallet', 'inventory']),
+  useRealShadows: true, // Default to real-time shadows for better visual quality
+  visibleEntityTypes: new Set(['worker', 'forklift', 'pallet', 'inventory', 'truck']),
   hierarchyExpanded: new Set(),
 
   // Monitoring state (Slice 2)
@@ -133,6 +134,10 @@ export const useStore = create<AppState>((set, get) => ({
   setTheme: (theme) => {
     localStorage.setItem('warehouse-theme', theme);
     set({ theme });
+  },
+
+  setUseRealShadows: (enabled) => {
+    set({ useRealShadows: enabled });
   },
 
   toggleEntityType: (entityType) => {

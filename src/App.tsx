@@ -9,6 +9,7 @@ import HierarchyPanel from './components/Panels/HierarchyPanel';
 import ErrorDisplay from './components/Controls/ErrorDisplay';
 import ViewGizmo from './components/UI/ViewGizmo';
 import ThemeToggle from './components/UI/ThemeToggle';
+import ShadowToggle from './components/Controls/ShadowToggle';
 import EntityFilterControl from './components/Controls/EntityFilterControl';
 import KPIPanel from './components/Panels/KPIPanel';
 import DrillDownPanel from './components/Panels/DrillDownPanel';
@@ -52,9 +53,10 @@ function App() {
         <EntityFilterControl />
       </div>
 
-      {/* Status Bar, Theme Toggle, and Overlay Legend */}
+      {/* Status Bar, Theme Toggle, Shadow Toggle, and Overlay Legend */}
       <div className="absolute top-6 right-6 z-10 flex gap-3">
         <OverlayLegend />
+        <ShadowToggle />
         <ThemeToggle />
         <StatusBar />
       </div>

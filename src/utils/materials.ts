@@ -76,6 +76,24 @@ export interface ThemeConfig {
     palletSelected: string;
     inventory: string;
     inventorySelected: string;
+    truck: string;
+    truckSelected: string;
+    truckCab: string;
+    truckTrailer: string;
+    truckWheel: string;
+
+    // Yard elements
+    yardSurface: string;
+    yardGrid: string;
+    roadAsphalt: string;
+    roadMarking: string;
+    roadArrow: string;
+    parkingBay: string;
+    parkingNumber: string;
+    gateFrame: string;
+    gateBarrier: string;
+    gateLightGreen: string;
+    gateLightRed: string;
 
     // Accents
     accentCyan: string;
@@ -225,6 +243,23 @@ const DARK_THEME_CONFIG: ThemeConfig = {
     palletSelected: '#00D9FF',
     inventory: '#6a7a8a',
     inventorySelected: '#4ade80',
+    truck: '#5a6a7a',
+    truckSelected: '#00D9FF',
+    truckCab: '#1e3a5f',
+    truckTrailer: '#6a7a8a',
+    truckWheel: '#1a1a1a',
+
+    yardSurface: '#2a2a2a',
+    yardGrid: '#3a3a3a',
+    roadAsphalt: '#1a1a1a',
+    roadMarking: '#ffffff',
+    roadArrow: '#ffff00',
+    parkingBay: '#ffd700',
+    parkingNumber: '#ffffff',
+    gateFrame: '#4a4a4a',
+    gateBarrier: '#ff6600',
+    gateLightGreen: '#00ff00',
+    gateLightRed: '#ff0000',
 
     accentCyan: '#22d3ee',
     selectionGlow: '#00D9FF',
@@ -251,7 +286,7 @@ const DARK_THEME_CONFIG: ThemeConfig = {
     keyLight: {
       intensity: 1.4,
       color: '#ffffff',
-      position: [50, 80, 40],
+      position: [50, 200, 40],
       castShadow: true,
     },
     fillLight: {
@@ -293,8 +328,8 @@ const DARK_THEME_CONFIG: ThemeConfig = {
   shadows: {
     enabled: true,
     blob: {
-      opacity: 0.45,
-      sizeMultiplier: 1.2,
+      opacity: 0.18,
+      sizeMultiplier: 1.6,
     },
     contact: {
       opacity: 0.45,
@@ -373,6 +408,23 @@ const LIGHT_THEME_CONFIG: ThemeConfig = {
     palletSelected: '#0088cc',
     inventory: '#5a6a7a',
     inventorySelected: '#22c55e',
+    truck: '#5a6a7a',
+    truckSelected: '#0088cc',
+    truckCab: '#2e5a8f',
+    truckTrailer: '#8a9aaa',
+    truckWheel: '#2a2a2a',
+
+    yardSurface: '#c8ccd0',
+    yardGrid: '#b8bcc0',
+    roadAsphalt: '#7a7e84',
+    roadMarking: '#ffffff',
+    roadArrow: '#f4c430',
+    parkingBay: '#ffd700',
+    parkingNumber: '#3a3e44',
+    gateFrame: '#8a8e94',
+    gateBarrier: '#ff8800',
+    gateLightGreen: '#22c55e',
+    gateLightRed: '#ef4444',
 
     accentCyan: '#0099dd',
     selectionGlow: '#0088cc',
@@ -399,7 +451,7 @@ const LIGHT_THEME_CONFIG: ThemeConfig = {
     keyLight: {
       intensity: 1.1,
       color: '#fffef8',
-      position: [50, 80, 40],
+      position: [50, 200, 40],
       castShadow: true,
     },
     fillLight: {
@@ -441,8 +493,8 @@ const LIGHT_THEME_CONFIG: ThemeConfig = {
   shadows: {
     enabled: true,
     blob: {
-      opacity: 0.3,
-      sizeMultiplier: 1.0,
+      opacity: 0.15,
+      sizeMultiplier: 1.65,
     },
     contact: {
       opacity: 0.3,

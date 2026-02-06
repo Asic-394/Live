@@ -27,7 +27,13 @@ interface WallSegment {
 // Helper function to calculate wall segments with openings
 function calculateWallSegments(wall: WarehouseLayoutElement): WallSegment[] {
   const segments: WallSegment[] = [];
-  const openings = wall.metadata?.openings || [];
+  
+  // Handle both 'openings' array and single 'gate_opening' object
+  let openings = wall.metadata?.openings || [];
+  if (wall.metadata?.gate_opening && openings.length === 0) {
+    // Convert single gate_opening to openings array
+    openings = [wall.metadata.gate_opening];
+  }
   
   // Determine if this is a vertical (West/East) or horizontal (North/South) wall
   const isVertical = wall.width < wall.depth; // width=2, depth=120 for vertical walls
@@ -144,6 +150,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
   const selectRack = useStore((state) => state.selectRack);
   const selectEntity = useStore((state) => state.selectEntity);
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const themeConfig = useSceneTheme();
   const { camera } = useThree();
 
@@ -160,6 +167,29 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
 
   return (
     <group>
+      {/* Main warehouse floor - base surface for shadows */}
+      {layout.bounds && (() => {
+        const boundsWidth = layout.bounds.maxX - layout.bounds.minX;
+        const boundsDepth = layout.bounds.maxY - layout.bounds.minY;
+        const centerX = (layout.bounds.minX + layout.bounds.maxX) / 2;
+        const centerZ = -(layout.bounds.minY + layout.bounds.maxY) / 2;
+        
+        return (
+          <mesh 
+            position={[centerX, 0, centerZ]} 
+            rotation={[-Math.PI / 2, 0, 0]}
+            receiveShadow={useRealShadows}
+          >
+            <planeGeometry args={[boundsWidth, boundsDepth]} />
+            <meshStandardMaterial
+              color={themeConfig.colors.floorBase}
+              roughness={themeConfig.materials.floor.roughness}
+              metalness={themeConfig.materials.floor.metalness}
+            />
+          </mesh>
+        );
+      })()}
+
       {/* Render Zones */}
       {layout.zones.map((zone) => {
         const pos = CoordinateMapper.csvToThree(zone.x, zone.y, zone.z || 0);
@@ -433,12 +463,14 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             </mesh>
             
             {/* Blob shadow for grounding */}
-            <BlobShadow
-              width={rack.width}
-              depth={rack.depth}
-              position={[0, 0.005, 0]}
-              opacity={isDimmed ? themeConfig.shadows.blob.opacity * 0.6 : themeConfig.shadows.blob.opacity}
-            />
+            {!useRealShadows && (
+              <BlobShadow
+                width={rack.width}
+                depth={rack.depth}
+                position={[0, 0.005, 0]}
+                opacity={isDimmed ? themeConfig.shadows.blob.opacity * 0.6 : themeConfig.shadows.blob.opacity}
+              />
+            )}
             
             {/* Optimized rack frame structure - single merged mesh per rack */}
             <OptimizedRackFrame
@@ -449,6 +481,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               emissive={emissiveColor}
               emissiveIntensity={emissiveIntensity * baseDimFactor}
               theme={theme}
+              useRealShadows={useRealShadows}
             />
 
             {/* Inventory boxes on shelves */}
@@ -500,54 +533,88 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         const doorColor = isReceiving ? themeConfig.colors.dockReceiving : themeConfig.colors.dockShipping;
         const doorEmissive = isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline;
         
+        // Calculate wall opening depth and position
+        // Wall-South is at CSV y=0, which is Three.js z=0
+        // Dock is at CSV y=5, which is Three.js z=-5
+        const wallY = 0; // South wall Y position in CSV coords
+        const wallZ = 0; // Wall center in Three.js coords (CoordinateMapper.csvToThree(0, 0, 0).z)
+        const wallDepth = 2; // Wall thickness
+        const wallHeight = 25;
+        const passageDepth = 8; // Depth of the passage extending OUTWARD from the wall
+        const truckHeight = 13; // Height for truck clearance
+        
+        // Position the passage extending outward from inside wall surface
+        // Wall center is at wallZ=0, inside surface is at wallZ - wallDepth/2 = -1
+        // Passage extends outward (positive Z direction) from inside surface
+        const passageCenterZ = wallZ - wallDepth / 2 + passageDepth / 2; // Extends outward from inside wall
+        
         return (
           <group key={dock.element_id}>
+            {/* Wall Opening - create a visible tunnel/passage through the wall extending outward */}
+            {/* Opening sides - left wall */}
+            <mesh position={[pos.x - dock.width / 2 - 0.6, truckHeight / 2, passageCenterZ]} castShadow receiveShadow>
+              <boxGeometry args={[1.2, truckHeight, passageDepth]} />
+              <meshStandardMaterial 
+                color={themeConfig.colors.wallMain} 
+                roughness={themeConfig.materials.wall.roughness}
+                metalness={themeConfig.materials.wall.metalness}
+              />
+            </mesh>
+            
+            {/* Opening sides - right wall */}
+            <mesh position={[pos.x + dock.width / 2 + 0.6, truckHeight / 2, passageCenterZ]} castShadow receiveShadow>
+              <boxGeometry args={[1.2, truckHeight, passageDepth]} />
+              <meshStandardMaterial 
+                color={themeConfig.colors.wallMain}
+                roughness={themeConfig.materials.wall.roughness}
+                metalness={themeConfig.materials.wall.metalness}
+              />
+            </mesh>
+            
+            {/* Wall section above opening - flush with inside wall, extends outward */}
+            <mesh position={[pos.x, truckHeight + (wallHeight - truckHeight) / 2, passageCenterZ]} castShadow receiveShadow>
+              <boxGeometry args={[dock.width + 2.4, wallHeight - truckHeight, passageDepth]} />
+              <meshStandardMaterial 
+                color={themeConfig.colors.wallMain}
+                roughness={themeConfig.materials.wall.roughness}
+                metalness={themeConfig.materials.wall.metalness}
+              />
+            </mesh>
+            
+            {/* Inner passage floor - slightly darker to show depth */}
+            <mesh position={[pos.x, 0.05, passageCenterZ]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[dock.width, passageDepth]} />
+              <meshStandardMaterial 
+                color={themeConfig.colors.floorBase}
+                roughness={0.9}
+              />
+            </mesh>
+            
             {/* Loading Bay Platform (elevated in front of door) */}
-            <mesh position={[pos.x, 0.75, pos.z]} castShadow receiveShadow>
+            <mesh position={[pos.x, 0.75, pos.z]} castShadow receiveShadow={useRealShadows}>
               <boxGeometry args={[dock.width + 4, 1.5, dock.depth + 4]} />
               <meshStandardMaterial color={themeConfig.colors.dockPlatform} roughness={0.8} />
             </mesh>
 
-            {/* Dock Door Frame - Left Post */}
-            <mesh position={[pos.x - dock.width / 2, doorHeight / 2, pos.z]} castShadow>
-              <boxGeometry args={[0.8, doorHeight, 1]} />
+            {/* Dock Door Frame - Left Post (at inside wall surface) */}
+            <mesh position={[pos.x - dock.width / 2, truckHeight / 2, wallZ - wallDepth / 2]} castShadow>
+              <boxGeometry args={[0.8, truckHeight, 0.5]} />
               <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
-            {/* Dock Door Frame - Right Post */}
-            <mesh position={[pos.x + dock.width / 2, doorHeight / 2, pos.z]} castShadow>
-              <boxGeometry args={[0.8, doorHeight, 1]} />
+            {/* Dock Door Frame - Right Post (at inside wall surface) */}
+            <mesh position={[pos.x + dock.width / 2, truckHeight / 2, wallZ - wallDepth / 2]} castShadow>
+              <boxGeometry args={[0.8, truckHeight, 0.5]} />
               <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
-            {/* Dock Door Frame - Top Lintel */}
-            <mesh position={[pos.x, doorHeight, pos.z]} castShadow>
-              <boxGeometry args={[dock.width + 1.6, 1.2, 1]} />
+            {/* Dock Door Frame - Top Lintel (at inside wall surface) */}
+            <mesh position={[pos.x, truckHeight, wallZ - wallDepth / 2]} castShadow>
+              <boxGeometry args={[dock.width + 1.6, 0.8, 0.5]} />
               <meshStandardMaterial color={themeConfig.colors.dockFrame} roughness={0.7} metalness={0.3} />
             </mesh>
 
-            {/* Dock Door (roll-up style) with subtle glow */}
-            <mesh position={[pos.x, doorHeight / 2, pos.z]}>
-              <boxGeometry args={[dock.width, doorHeight, 0.3]} />
-              <meshStandardMaterial 
-                color={doorColor} 
-                roughness={0.6} 
-                metalness={0.4}
-                emissive={doorEmissive}
-                emissiveIntensity={0.1}
-              />
-            </mesh>
-            
-            {/* Colored outline around door frame */}
-            <lineSegments position={[pos.x, doorHeight / 2, pos.z + 0.2]}>
-              <edgesGeometry args={[new THREE.BoxGeometry(dock.width, doorHeight, 0.1)]} />
-              <lineBasicMaterial 
-                color={isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline}
-                linewidth={2}
-                transparent
-                opacity={0.8}
-              />
-            </lineSegments>
+            {/* Door opening - no shutter, remains open */}
 
             {/* Safety Stripes on Platform (yellow/black) */}
             <mesh position={[pos.x - dock.width / 2 - 2, 1.51, pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -558,6 +625,29 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               <planeGeometry args={[1.5, dock.depth + 4]} />
               <meshStandardMaterial color={themeConfig.colors.safetyYellow} roughness={0.7} />
             </mesh>
+            
+            {/* Parking lines outside dock door (yard style) */}
+            <group>
+              {/* Left parking boundary line */}
+              <mesh position={[pos.x - dock.width / 2, 0.06, wallZ + passageDepth + 10]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.5, 20]} />
+                <meshBasicMaterial 
+                  color={themeConfig.colors.parkingBay}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+              
+              {/* Right parking boundary line */}
+              <mesh position={[pos.x + dock.width / 2, 0.06, wallZ + passageDepth + 10]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.5, 20]} />
+                <meshBasicMaterial 
+                  color={themeConfig.colors.parkingBay}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+            </group>
             
             {/* Floor safety markings extending from dock */}
             <group>
@@ -602,36 +692,89 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               </mesh>
             </group>
 
-            {/* Bay Number Sign with subtle backlight */}
-            <mesh position={[pos.x, doorHeight + 2, pos.z - 1]} castShadow>
-              <boxGeometry args={[3, 2, 0.3]} />
-              <meshStandardMaterial 
-                color={themeConfig.colors.wallTrim}
-                emissive={themeConfig.colors.wallTrim}
-                emissiveIntensity={0.15}
-              />
-            </mesh>
-            <Text
-              position={[pos.x, doorHeight + 2, pos.z - 0.85]}
-              fontSize={1.5}
-              color={themeConfig.colors.dockLabelColor}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {dock.element_id.replace('Dock-', 'Bay ')}
-            </Text>
+            {/* Dock signage on wall above door - INSIDE (facing warehouse interior) */}
+            <group>
+              {/* Signage background panel - inside (attached to wall) */}
+              <mesh position={[pos.x, truckHeight + 2.5, wallZ - wallDepth / 2 - 0.2]} castShadow>
+                <boxGeometry args={[dock.width - 1, 3, 0.4]} />
+                <meshStandardMaterial 
+                  color={isReceiving ? '#1e3a28' : '#3a281e'}
+                  emissive={isReceiving ? '#4ade80' : '#fb923c'}
+                  emissiveIntensity={0.5}
+                  roughness={0.3}
+                  metalness={0.5}
+                />
+              </mesh>
+              
+              {/* Bay number - inside (rotated to face warehouse interior) */}
+              <Text
+                position={[pos.x, truckHeight + 3.2, wallZ - wallDepth / 2 - 0.45]}
+                fontSize={2.2}
+                color="#ffffff"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.15}
+                outlineColor="#000000"
+                rotation={[0, Math.PI, 0]}
+              >
+                {dock.element_id.replace('Dock-', 'BAY ')}
+              </Text>
+              
+              {/* Dock type label - inside (rotated to face warehouse interior) */}
+              <Text
+                position={[pos.x, truckHeight + 1.8, wallZ - wallDepth / 2 - 0.45]}
+                fontSize={1.4}
+                color="#ffffff"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.1}
+                outlineColor="#000000"
+                rotation={[0, Math.PI, 0]}
+              >
+                {isReceiving ? 'RECEIVING' : 'SHIPPING'}
+              </Text>
+            </group>
 
-            {/* Dock Type Label */}
-            <Text
-              position={[pos.x, 0.2, pos.z]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={1.5}
-              color={isReceiving ? themeConfig.colors.dockReceivingOutline : themeConfig.colors.dockShippingOutline}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {isReceiving ? 'RECEIVING' : 'SHIPPING'}
-            </Text>
+            {/* Dock signage on wall above door - OUTSIDE (facing yard) */}
+            <group>
+              {/* Signage background panel - outside (attached to outer wall surface) */}
+              <mesh position={[pos.x, truckHeight + 2.5, passageCenterZ + passageDepth / 2 + 0.2]} castShadow>
+                <boxGeometry args={[dock.width - 1, 3, 0.4]} />
+                <meshStandardMaterial 
+                  color={isReceiving ? '#1e3a28' : '#3a281e'}
+                  emissive={isReceiving ? '#4ade80' : '#fb923c'}
+                  emissiveIntensity={0.5}
+                  roughness={0.3}
+                  metalness={0.5}
+                />
+              </mesh>
+              
+              {/* Bay number - outside */}
+              <Text
+                position={[pos.x, truckHeight + 3.2, passageCenterZ + passageDepth / 2 + 0.45]}
+                fontSize={2.2}
+                color="#ffffff"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.15}
+                outlineColor="#000000"
+              >
+                {dock.element_id.replace('Dock-', 'BAY ')}
+              </Text>
+              
+              {/* Dock type label - outside */}
+              <Text
+                position={[pos.x, truckHeight + 1.8, passageCenterZ + passageDepth / 2 + 0.45]}
+                fontSize={1.4}
+                color="#ffffff"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.1}
+                outlineColor="#000000"
+              >
+                {isReceiving ? 'RECEIVING' : 'SHIPPING'}
+              </Text>
+            </group>
           </group>
         );
       })}
@@ -701,6 +844,290 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                 </group>
               );
             })}
+          </group>
+        );
+      })}
+
+      {/* Render Yards */}
+      {layout.yards?.map((yard) => {
+        const pos = CoordinateMapper.csvToThree(yard.x, yard.y, 0);
+        
+        return (
+          <group key={yard.element_id}>
+            {/* Yard surface */}
+            <mesh position={[pos.x, 0.005, pos.z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <planeGeometry args={[yard.width, yard.depth]} />
+              <meshStandardMaterial
+                color={themeConfig.colors.yardSurface}
+                roughness={0.85}
+                metalness={0.05}
+              />
+            </mesh>
+            
+            {/* Yard grid lines for texture */}
+            <lineSegments position={[pos.x, 0.015, pos.z]}>
+              <edgesGeometry args={[new THREE.PlaneGeometry(yard.width, yard.depth, 16, 16)]} />
+              <lineBasicMaterial
+                color={themeConfig.colors.yardGrid}
+                transparent
+                opacity={0.15}
+              />
+            </lineSegments>
+          </group>
+        );
+      })}
+
+      {/* Render Parking Spaces */}
+      {layout.parkings?.map((parking, index) => {
+        const pos = CoordinateMapper.csvToThree(parking.x, parking.y, 0);
+        const bayNumber = parking.metadata?.bay_number;
+        const isIndividualBay = bayNumber !== undefined;
+        
+        // Check for adjacent parking spaces
+        const prevParking = index > 0 ? layout.parkings?.[index - 1] : null;
+        const hasPrevAdjacent = prevParking && 
+          Math.abs(prevParking.x - parking.x) <= (parking.width + 10) &&
+          prevParking.y === parking.y &&
+          prevParking.metadata?.bay_number !== undefined;
+        
+        const nextParking = layout.parkings?.[index + 1];
+        const hasNextAdjacent = nextParking && 
+          Math.abs(nextParking.x - parking.x) <= (parking.width + 10) &&
+          nextParking.y === parking.y &&
+          nextParking.metadata?.bay_number !== undefined;
+        
+        return (
+          <group key={parking.element_id}>
+            {/* Left boundary line - only for first parking in a row */}
+            {isIndividualBay && !hasPrevAdjacent && (
+              <mesh 
+                position={[pos.x - parking.width / 2, 0.04, pos.z]} 
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[0.5, parking.depth]} />
+                <meshBasicMaterial
+                  color={themeConfig.colors.parkingBay}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+            )}
+            
+            {/* Right line - division between spaces or end boundary */}
+            {isIndividualBay && (
+              <mesh 
+                position={[pos.x + parking.width / 2, 0.04, pos.z]} 
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[0.5, parking.depth]} />
+                <meshBasicMaterial
+                  color={themeConfig.colors.parkingBay}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+            )}
+            
+            {/* Bay number label */}
+            {isIndividualBay && (
+              <Text
+                position={[pos.x, 0.06, pos.z]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                fontSize={2.5}
+                color={themeConfig.colors.parkingNumber}
+                anchorX="center"
+                anchorY="middle"
+              >
+                P{bayNumber}
+              </Text>
+            )}
+          </group>
+        );
+      })}
+
+      {/* Render Gates */}
+      {layout.gates?.map((gate) => {
+        const pos = CoordinateMapper.csvToThree(gate.x, gate.y, 0);
+        const gateHeight = gate.height || 12;
+        const status = gate.metadata?.status || 'closed';
+        const isOpen = status === 'open';
+        const lanes = gate.metadata?.lanes || 1;
+        const laneWidth = (gate.width - 6) / 2; // Subtract cabin width, divide by 2
+        
+        return (
+          <group key={gate.element_id} position={[pos.x, 0, pos.z]}>
+            {/* Gate foundation/base */}
+            <mesh position={[0, 0.5, 0]}>
+              <boxGeometry args={[gate.width + 4, 1, gate.depth + 2]} />
+              <meshStandardMaterial
+                color={themeConfig.colors.gateFrame}
+                roughness={0.8}
+                metalness={0.3}
+              />
+            </mesh>
+            
+            {/* Security cabin (center) */}
+            <mesh position={[0, 4, 0]} castShadow>
+              <boxGeometry args={[6, 8, gate.depth]} />
+              <meshStandardMaterial
+                color={themeConfig.colors.gateCabin}
+                roughness={0.6}
+                metalness={0.2}
+              />
+            </mesh>
+            
+            {/* Cabin roof */}
+            <mesh position={[0, 8.5, 0]} castShadow>
+              <boxGeometry args={[7, 1, gate.depth + 1]} />
+              <meshStandardMaterial
+                color={themeConfig.colors.gateFrame}
+                roughness={0.7}
+                metalness={0.4}
+              />
+            </mesh>
+            
+            {/* Entry Lane (left side) */}
+            <group position={[-gate.width / 2 + laneWidth / 2 + 2, 0, 0]}>
+              {/* Entry post */}
+              <mesh position={[0, 3.5, 0]} castShadow>
+                <cylinderGeometry args={[0.6, 0.6, 7]} />
+                <meshStandardMaterial
+                  color={themeConfig.colors.gatePost}
+                  roughness={0.6}
+                  metalness={0.5}
+                />
+              </mesh>
+              {/* Post cap */}
+              <mesh position={[0, 7, 0]} castShadow>
+                <sphereGeometry args={[0.7]} />
+                <meshStandardMaterial
+                  color={themeConfig.colors.gatePost}
+                  roughness={0.5}
+                  metalness={0.6}
+                />
+              </mesh>
+              
+              {/* Entry boom barrier */}
+              <group position={[0, 7, 0]} rotation={[0, 0, isOpen ? -Math.PI / 2 : 0]}>
+                <mesh position={[laneWidth / 2, 0, 0]} castShadow>
+                  <boxGeometry args={[laneWidth, 0.5, 0.5]} />
+                  <meshStandardMaterial
+                    color={themeConfig.colors.gateBarrier}
+                    roughness={0.5}
+                    metalness={0.3}
+                  />
+                </mesh>
+                {/* Red/white stripes on barrier */}
+                {[...Array(Math.floor(laneWidth / 3))].map((_, i) => (
+                  <mesh key={i} position={[i * 3 - laneWidth / 2 + 1.5, 0, 0]}>
+                    <boxGeometry args={[1.5, 0.51, 0.51]} />
+                    <meshStandardMaterial
+                      color={i % 2 === 0 ? '#ffffff' : '#ff0000'}
+                      roughness={0.4}
+                      metalness={0.2}
+                    />
+                  </mesh>
+                ))}
+              </group>
+              
+              {/* Entry status light */}
+              <mesh position={[0, 8, -gate.depth / 2 - 0.5]}>
+                <sphereGeometry args={[0.4]} />
+                <meshStandardMaterial
+                  color={isOpen ? themeConfig.colors.gateLightGreen : themeConfig.colors.gateLightRed}
+                  emissive={isOpen ? themeConfig.colors.gateLightGreen : themeConfig.colors.gateLightRed}
+                  emissiveIntensity={0.8}
+                />
+              </mesh>
+              
+              {/* Entry sign */}
+              <Text
+                position={[0, 5, -gate.depth / 2 - 0.5]}
+                fontSize={1.2}
+                color={themeConfig.colors.gateText}
+                anchorX="center"
+                anchorY="middle"
+              >
+                ENTRY
+              </Text>
+            </group>
+            
+            {/* Exit Lane (right side) */}
+            <group position={[gate.width / 2 - laneWidth / 2 - 2, 0, 0]}>
+              {/* Exit post */}
+              <mesh position={[0, 3.5, 0]} castShadow>
+                <cylinderGeometry args={[0.6, 0.6, 7]} />
+                <meshStandardMaterial
+                  color={themeConfig.colors.gatePost}
+                  roughness={0.6}
+                  metalness={0.5}
+                />
+              </mesh>
+              {/* Post cap */}
+              <mesh position={[0, 7, 0]} castShadow>
+                <sphereGeometry args={[0.7]} />
+                <meshStandardMaterial
+                  color={themeConfig.colors.gatePost}
+                  roughness={0.5}
+                  metalness={0.6}
+                />
+              </mesh>
+              
+              {/* Exit boom barrier */}
+              <group position={[0, 7, 0]} rotation={[0, 0, isOpen ? Math.PI / 2 : 0]}>
+                <mesh position={[-laneWidth / 2, 0, 0]} castShadow>
+                  <boxGeometry args={[laneWidth, 0.5, 0.5]} />
+                  <meshStandardMaterial
+                    color={themeConfig.colors.gateBarrier}
+                    roughness={0.5}
+                    metalness={0.3}
+                  />
+                </mesh>
+                {/* Red/white stripes on barrier */}
+                {[...Array(Math.floor(laneWidth / 3))].map((_, i) => (
+                  <mesh key={i} position={[-i * 3 + laneWidth / 2 - 1.5, 0, 0]}>
+                    <boxGeometry args={[1.5, 0.51, 0.51]} />
+                    <meshStandardMaterial
+                      color={i % 2 === 0 ? '#ffffff' : '#ff0000'}
+                      roughness={0.4}
+                      metalness={0.2}
+                    />
+                  </mesh>
+                ))}
+              </group>
+              
+              {/* Exit status light */}
+              <mesh position={[0, 8, -gate.depth / 2 - 0.5]}>
+                <sphereGeometry args={[0.4]} />
+                <meshStandardMaterial
+                  color={isOpen ? themeConfig.colors.gateLightGreen : themeConfig.colors.gateLightRed}
+                  emissive={isOpen ? themeConfig.colors.gateLightGreen : themeConfig.colors.gateLightRed}
+                  emissiveIntensity={0.8}
+                />
+              </mesh>
+              
+              {/* Exit sign */}
+              <Text
+                position={[0, 5, -gate.depth / 2 - 0.5]}
+                fontSize={1.2}
+                color={themeConfig.colors.gateText}
+                anchorX="center"
+                anchorY="middle"
+              >
+                EXIT
+              </Text>
+            </group>
+            
+            {/* Main gate sign */}
+            <Text
+              position={[0, 9.5, -gate.depth / 2 - 0.5]}
+              fontSize={1.8}
+              color={themeConfig.colors.gateText}
+              anchorX="center"
+              anchorY="middle"
+            >
+              SECURITY
+            </Text>
           </group>
         );
       })}

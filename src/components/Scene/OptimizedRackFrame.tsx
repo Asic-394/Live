@@ -14,6 +14,7 @@ interface OptimizedRackFrameProps {
   emissive: string;
   emissiveIntensity: number;
   theme: Theme;
+  useRealShadows?: boolean;
   roughness?: number;
   metalness?: number;
 }
@@ -31,6 +32,7 @@ export default function OptimizedRackFrame({
   emissive,
   emissiveIntensity,
   theme,
+  useRealShadows = false,
   roughness,
   metalness,
 }: OptimizedRackFrameProps) {
@@ -124,7 +126,7 @@ export default function OptimizedRackFrame({
     <mesh 
       geometry={mergedGeometry} 
       material={material}
-      castShadow={false}  // Disable shadows on rack frames for performance
+      castShadow={useRealShadows}
       receiveShadow={false}
     />
   );

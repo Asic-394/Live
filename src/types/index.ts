@@ -1,7 +1,7 @@
 // Core types based on DataContracts.md
 
-export type ElementType = 'zone' | 'aisle' | 'rack' | 'dock' | 'wall';
-export type EntityType = 'worker' | 'forklift' | 'pallet' | 'inventory';
+export type ElementType = 'zone' | 'aisle' | 'rack' | 'dock' | 'wall' | 'yard' | 'road' | 'parking' | 'gate';
+export type EntityType = 'worker' | 'forklift' | 'pallet' | 'inventory' | 'truck';
 export type EntityStatus = 'active' | 'idle' | 'moving' | 'error' | 'staged' | 'stored' | 'waiting' | 'standby' | 'available';
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -28,6 +28,10 @@ export interface WarehouseLayout {
   racks: WarehouseLayoutElement[];
   docks: WarehouseLayoutElement[];
   walls: WarehouseLayoutElement[];
+  yards: WarehouseLayoutElement[];
+  roads: WarehouseLayoutElement[];
+  parkings: WarehouseLayoutElement[];
+  gates: WarehouseLayoutElement[];
   bounds: {
     minX: number;
     maxX: number;
@@ -138,6 +142,7 @@ export interface AppState {
   
   // UI state
   theme: Theme;
+  useRealShadows: boolean; // Toggle between real shadow mapping and blob shadows
   visibleEntityTypes: Set<EntityType>; // Entity types currently visible
   hierarchyExpanded: Set<string>; // Expanded nodes in hierarchy tree
   
@@ -159,6 +164,7 @@ export interface AppState {
   setError: (error: string | null) => void;
   setCameraMode: (mode: CameraMode) => void;
   setTheme: (theme: Theme) => void;
+  setUseRealShadows: (enabled: boolean) => void;
   toggleEntityType: (entityType: EntityType) => void;
   setVisibleEntityTypes: (types: Set<EntityType>) => void;
   

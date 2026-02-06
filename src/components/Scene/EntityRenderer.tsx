@@ -20,6 +20,7 @@ interface EntityMeshProps {
 
 function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const config = getThemeConfig(theme);
   const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
@@ -55,13 +56,16 @@ function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
-      <BlobShadow width={2.5} depth={2.5} opacity={isDimmed ? 0.15 : undefined} />
+      {!useRealShadows && (
+        <BlobShadow width={2.5} depth={2.5} opacity={isDimmed ? 0.15 : undefined} />
+      )}
       
       {/* Worker cylinder - using pooled geometry and material */}
       <mesh
         position={[0, 3, 0]}
         geometry={geometry}
         material={material}
+        castShadow={useRealShadows}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
@@ -72,6 +76,7 @@ function WorkerMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
 
 function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const config = getThemeConfig(theme);
   const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
@@ -85,9 +90,13 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
     ? config.effects.hover.emissiveIntensity 
     : 0;
 
-  // Use pooled geometries
-  const bodyGeometry = useMemo(() => GeometryPool.getBox(4, 4, 6), []);
-  const forksGeometry = useMemo(() => GeometryPool.getBox(3, 1, 3), []);
+  // Use pooled geometries - enhanced forklift design
+  const bodyGeometry = useMemo(() => GeometryPool.getBox(3.5, 2.5, 4), []);
+  const mastGeometry = useMemo(() => GeometryPool.getBox(0.4, 6, 0.4), []);
+  const forkTineGeometry = useMemo(() => GeometryPool.getBox(0.3, 0.3, 3.5), []);
+  const wheelGeometry = useMemo(() => GeometryPool.getCylinder(0.6, 0.6, 0.5, 8), []);
+  const overheadGuardGeometry = useMemo(() => GeometryPool.getBox(3, 0.2, 3.5), []);
+  const seatGeometry = useMemo(() => GeometryPool.getBox(1.2, 0.6, 1), []);
 
   // Use pooled materials
   const bodyMaterial = useMemo(() => 
@@ -114,24 +123,113 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
     [colors.forkliftForks, isDimmed, opacity]
   );
 
+  const wheelMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: '#1a1a1a',
+      roughness: 0.8,
+      metalness: 0.1,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isDimmed, opacity]
+  );
+
+  const mastMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: colors.forkliftForks,
+      roughness: 0.5,
+      metalness: 0.5,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [colors.forkliftForks, isDimmed, opacity]
+  );
+
   return (
     <group position={[pos.x, 0, pos.z]} onClick={onSelect}>
       {/* Blob shadow */}
-      <BlobShadow width={5} depth={7} opacity={isDimmed ? 0.15 : undefined} />
+      {!useRealShadows && (
+        <BlobShadow width={5} depth={7} opacity={isDimmed ? 0.15 : undefined} />
+      )}
       
-      {/* Body - using pooled geometry and material */}
+      {/* Main Body */}
       <mesh
-        position={[0, 2, 0]}
+        position={[0, 1.5, 0]}
         geometry={bodyGeometry}
         material={bodyMaterial}
+        castShadow={useRealShadows}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       />
-      {/* Forks - using pooled geometry and material */}
+
+      {/* Seat */}
+      <mesh
+        position={[0, 2.8, 0.3]}
+        geometry={seatGeometry}
+        material={bodyMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Overhead Guard */}
+      <mesh
+        position={[0, 5.5, 0]}
+        geometry={overheadGuardGeometry}
+        material={mastMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Mast (vertical support) */}
+      <mesh
+        position={[0, 4, 2.2]}
+        geometry={mastGeometry}
+        material={mastMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Fork Tines (left and right) */}
       <mesh 
-        position={[0, 1, 4]}
-        geometry={forksGeometry}
+        position={[-0.8, 1.2, 3.5]}
+        geometry={forkTineGeometry}
         material={forksMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh 
+        position={[0.8, 1.2, 3.5]}
+        geometry={forkTineGeometry}
+        material={forksMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Wheels - Front (rotated 90 degrees on Z axis) */}
+      <mesh
+        position={[-1.2, 0.6, 1.5]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh
+        position={[1.2, 0.6, 1.5]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Wheels - Rear */}
+      <mesh
+        position={[-1.2, 0.6, -1.2]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh
+        position={[1.2, 0.6, -1.2]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
       />
     </group>
   );
@@ -139,6 +237,7 @@ function ForkliftMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProp
 
 function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const config = getThemeConfig(theme);
   const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
@@ -172,13 +271,16 @@ function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow */}
-      <BlobShadow width={4.5} depth={4.5} opacity={isDimmed ? 0.15 : undefined} />
+      {!useRealShadows && (
+        <BlobShadow width={4.5} depth={4.5} opacity={isDimmed ? 0.15 : undefined} />
+      )}
       
       {/* Pallet - using pooled geometry and material */}
       <mesh
         position={[0, 1, 0]}
         geometry={geometry}
         material={material}
+        castShadow={useRealShadows}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
@@ -189,6 +291,7 @@ function PalletMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps)
 
 function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
   const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
   const config = getThemeConfig(theme);
   const colors = config.colors;
   const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
@@ -222,7 +325,7 @@ function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshPro
   return (
     <group position={[pos.x, 0, pos.z]}>
       {/* Blob shadow (only if on ground) */}
-      {(entity.z === undefined || entity.z === 0) && (
+      {!useRealShadows && (entity.z === undefined || entity.z === 0) && (
         <BlobShadow width={3.5} depth={3.5} opacity={isDimmed ? 0.15 : undefined} />
       )}
       
@@ -231,9 +334,155 @@ function InventoryMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshPro
         position={[0, pos.y, 0]}
         geometry={geometry}
         material={material}
+        castShadow={useRealShadows}
         onClick={onSelect}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
+      />
+    </group>
+  );
+}
+
+function TruckMesh({ entity, isSelected, isDimmed, onSelect }: EntityMeshProps) {
+  const theme = useStore((state) => state.theme);
+  const useRealShadows = useStore((state) => state.useRealShadows);
+  const config = getThemeConfig(theme);
+  const colors = config.colors;
+  const pos = CoordinateMapper.csvToThree(entity.x, entity.y, entity.z || 0);
+  const [hovered, setHovered] = useState(false);
+  const opacity = isDimmed ? 0.4 : 1.0;
+
+  // Get rotation from entity (convert degrees to radians)
+  const rotation = entity.metadata?.rotation || 0;
+  const rotationRad = (rotation * Math.PI) / 180;
+
+  // Theme token: selection and hover emissive intensity
+  const emissiveIntensity = isSelected 
+    ? config.effects.selection.emissiveIntensity * 0.3 
+    : hovered 
+    ? config.effects.hover.emissiveIntensity 
+    : 0;
+
+  // Use pooled geometries
+  const cabGeometry = useMemo(() => GeometryPool.getBox(10, 6, 8), []);
+  const trailerGeometry = useMemo(() => GeometryPool.getBox(10, 8, 22), []);
+  const wheelGeometry = useMemo(() => GeometryPool.getCylinder(1.8, 1.8, 3.0), []);
+
+  // Use pooled materials
+  const cabMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: isSelected ? colors.truckSelected : colors.truckCab,
+      emissive: isSelected || hovered ? colors.truckCab : '#000000',
+      emissiveIntensity: emissiveIntensity * opacity,
+      roughness: config.materials.entity.roughness * 0.8,
+      metalness: config.materials.entity.metalness * 2,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]
+  );
+
+  const trailerMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: isSelected ? colors.truckSelected : colors.truckTrailer,
+      emissive: isSelected || hovered ? colors.truckTrailer : '#000000',
+      emissiveIntensity: emissiveIntensity * opacity * 0.5,
+      roughness: config.materials.entity.roughness,
+      metalness: config.materials.entity.metalness * 1.5,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [isSelected, hovered, isDimmed, colors, config, emissiveIntensity, opacity]
+  );
+
+  const wheelMaterial = useMemo(() =>
+    MaterialPool.getStandardMaterial({
+      color: colors.truckWheel,
+      roughness: 0.8,
+      metalness: 0.3,
+      transparent: isDimmed,
+      opacity: opacity,
+    }),
+    [colors.truckWheel, isDimmed, opacity]
+  );
+
+  return (
+    <group 
+      position={[pos.x, 0, pos.z]} 
+      rotation={[0, rotationRad, 0]}
+      onClick={onSelect}
+    >
+      {/* Blob shadow */}
+      {!useRealShadows && (
+        <BlobShadow width={12} depth={30} opacity={isDimmed ? 0.15 : undefined} />
+      )}
+      
+      {/* Truck cab - raised off ground */}
+      <mesh
+        position={[0, 4.8, -11]}
+        geometry={cabGeometry}
+        material={cabMaterial}
+        castShadow={useRealShadows}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      />
+
+      {/* Truck trailer - raised off ground, touching cab */}
+      <mesh
+        position={[0, 5.8, 4]}
+        geometry={trailerGeometry}
+        material={trailerMaterial}
+        castShadow={useRealShadows}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      />
+
+      {/* Wheels - cab (single pair) */}
+      <mesh
+        position={[-3.55, 1.8, -10]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh
+        position={[3.55, 1.8, -10]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Wheels - trailer front */}
+      <mesh
+        position={[-3.55, 1.8, 2]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh
+        position={[3.55, 1.8, 2]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+
+      {/* Wheels - trailer rear */}
+      <mesh
+        position={[-3.55, 1.8, 12]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
+      />
+      <mesh
+        position={[3.55, 1.8, 12]}
+        rotation={[0, 0, Math.PI / 2]}
+        geometry={wheelGeometry}
+        material={wheelMaterial}
+        castShadow={useRealShadows}
       />
     </group>
   );
@@ -308,6 +557,16 @@ export default function EntityRenderer({ entities }: Props) {
           case 'inventory':
             return (
               <InventoryMesh
+                key={entity.entity_id}
+                entity={entity}
+                isSelected={isSelected}
+                isDimmed={isDimmed}
+                onSelect={handleSelect}
+              />
+            );
+          case 'truck':
+            return (
+              <TruckMesh
                 key={entity.entity_id}
                 entity={entity}
                 isSelected={isSelected}

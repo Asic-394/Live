@@ -1,7 +1,9 @@
 element_type,element_id,name,x,y,z,width,depth,height,rotation,capacity,metadata
-zone,Zone-A,Receiving Zone,70,70,0,100,100,15,0,1500,"{""floor"": 1}"
-zone,Zone-B,Storage/Picking Zone,300,70,0,360,120,20,0,5000,"{""floor"": 1}"
-zone,Zone-D,Staging Zone,520,70,0,100,100,12,0,800,"{""floor"": 1}"
+zone,Zone-A,Receiving Zone,70,70,0,100,100,15,0,1500,"{""floor"": 1, ""zone_type"": ""inbound"", ""priority"": ""high""}"
+zone,Zone-B1,Fast-Pick Storage,170,70,0,100,120,20,0,1800,"{""floor"": 1, ""zone_type"": ""storage"", ""velocity"": ""high"", ""abc_class"": ""A"", ""purpose"": ""picking""}"
+zone,Zone-B2,Reserve Storage - Medium,280,70,0,120,120,20,0,2000,"{""floor"": 1, ""zone_type"": ""storage"", ""velocity"": ""medium"", ""abc_class"": ""B"", ""purpose"": ""reserve""}"
+zone,Zone-B3,Bulk Storage,410,70,0,140,120,20,0,2200,"{""floor"": 1, ""zone_type"": ""storage"", ""velocity"": ""low"", ""abc_class"": ""C"", ""purpose"": ""bulk"", ""storage_type"": ""high_density""}"
+zone,Zone-D,Shipping Staging,520,70,0,100,100,12,0,800,"{""floor"": 1, ""zone_type"": ""outbound"", ""priority"": ""high""}"
 aisle,Aisle-Main,Main Cross Aisle,300,130,0,500,15,0,0,,"{""type"": ""main""}"
 aisle,Aisle-1,Picking Aisle 1,160,70,0,8,100,0,0,,"{""type"": ""picking""}"
 aisle,Aisle-2,Picking Aisle 2,220,70,0,8,100,0,0,,"{""type"": ""picking""}"

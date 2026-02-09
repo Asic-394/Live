@@ -35,6 +35,10 @@ export const useStore = create<AppState>((set, get) => ({
   useRealShadows: true, // Default to real-time shadows for better visual quality
   visibleEntityTypes: new Set(['worker', 'forklift', 'pallet', 'inventory', 'truck']),
   hierarchyExpanded: new Set(),
+  leftSidebarCollapsed: false,
+  hierarchySectionExpanded: true,
+  healthSectionExpanded: true,
+  filterSectionExpanded: true,
 
   // Monitoring state (Slice 2)
   kpis: [],
@@ -155,6 +159,22 @@ export const useStore = create<AppState>((set, get) => ({
 
   setVisibleEntityTypes: (types) => {
     set({ visibleEntityTypes: types });
+  },
+
+  toggleLeftSidebar: () => {
+    set({ leftSidebarCollapsed: !get().leftSidebarCollapsed });
+  },
+
+  toggleHierarchySection: () => {
+    set({ hierarchySectionExpanded: !get().hierarchySectionExpanded });
+  },
+
+  toggleHealthSection: () => {
+    set({ healthSectionExpanded: !get().healthSectionExpanded });
+  },
+
+  toggleFilterSection: () => {
+    set({ filterSectionExpanded: !get().filterSectionExpanded });
   },
 
   // Monitoring actions (Slice 2)

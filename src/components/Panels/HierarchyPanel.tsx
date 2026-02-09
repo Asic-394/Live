@@ -98,7 +98,6 @@ export default function HierarchyPanel() {
   const selectedRack = useStore((state) => state.selectedRack);
   const selectedBox = useStore((state) => state.selectedBox);
   
-  const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!warehouseLayout) return null;
@@ -142,41 +141,12 @@ export default function HierarchyPanel() {
     matchesSearch(zone.name || '')
   );
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="absolute top-28 left-6 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
-        title="Show Hierarchy"
-      >
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          <span className="text-sm text-gray-400 group-hover:text-gray-200">Hierarchy</span>
-        </div>
-      </button>
-    );
-  }
-
   return (
-    <div className="absolute top-28 left-6 w-80 glass-panel rounded-xl p-4 z-10 text-gray-100 max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col animate-fade-in">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-blue-400">Warehouse Hierarchy</h3>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-gray-400 hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-white/5"
-          title="Close"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+    <div className="w-full text-gray-100 flex flex-col">
+      {/* Header - removed, now in parent sidebar */}
 
       {/* Search */}
-      <div className="mb-4">
+      <div className="mb-3 px-2">
         <input
           type="text"
           value={searchQuery}
@@ -187,7 +157,7 @@ export default function HierarchyPanel() {
       </div>
 
       {/* Tree */}
-      <div className="flex-1 overflow-y-auto space-y-1">
+      <div className="max-h-[400px] overflow-y-auto space-y-1 px-2">
         {filteredZones.map((zone) => {
           const zoneId = zone.element_id;
           const zoneAisles = aislesByZone[zoneId] || [];
@@ -289,7 +259,7 @@ export default function HierarchyPanel() {
       </div>
 
       {/* Stats */}
-      <div className="mt-4 pt-4 border-t border-white/10 text-xs text-gray-400 flex justify-between">
+      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-400 flex justify-between px-2">
         <span>{zones.length} zones</span>
         <span>{racks.length} racks</span>
         <span>{boxes.length} boxes</span>

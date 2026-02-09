@@ -5,15 +5,13 @@ import DatasetSelector from './components/Controls/DatasetSelector';
 import ResetButton from './components/Controls/ResetButton';
 import StatusBar from './components/Controls/StatusBar';
 import EntityDetailPanel from './components/Panels/EntityDetailPanel';
-import HierarchyPanel from './components/Panels/HierarchyPanel';
 import ErrorDisplay from './components/Controls/ErrorDisplay';
 import ViewGizmo from './components/UI/ViewGizmo';
 import ThemeToggle from './components/UI/ThemeToggle';
 import ShadowToggle from './components/Controls/ShadowToggle';
-import EntityFilterControl from './components/Controls/EntityFilterControl';
-import KPIPanel from './components/Panels/KPIPanel';
 import DrillDownPanel from './components/Panels/DrillDownPanel';
 import OverlayLegend from './components/Controls/OverlayLegend';
+import LeftSidebar from './components/Layout/LeftSidebar';
 
 function App() {
   const loadDataset = useStore((state) => state.loadDataset);
@@ -39,18 +37,13 @@ function App() {
 
   return (
     <div className="w-full h-full relative bg-gray-200 dark:bg-gradient-to-br dark:from-[#0d0f14] dark:via-[#0a0c11] dark:to-[#08090d]">
+      {/* Left Sidebar - Unified panel for Hierarchy, Health, and Filters */}
+      <LeftSidebar />
+
       {/* Top Controls */}
       <div className="absolute top-6 left-6 z-10 flex gap-3">
         <DatasetSelector />
         <ResetButton />
-      </div>
-
-      {/* Hierarchy Panel */}
-      <HierarchyPanel />
-
-      {/* Entity Filter Control */}
-      <div className="absolute top-52 left-6 z-10">
-        <EntityFilterControl />
       </div>
 
       {/* Status Bar, Theme Toggle, Shadow Toggle, and Overlay Legend */}
@@ -59,11 +52,6 @@ function App() {
         <ShadowToggle />
         <ThemeToggle />
         <StatusBar />
-      </div>
-
-      {/* KPI Panel (bottom-left) */}
-      <div className="absolute bottom-6 left-6 z-10">
-        <KPIPanel />
       </div>
 
       {/* 3D Scene */}

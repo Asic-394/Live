@@ -145,6 +145,10 @@ export interface AppState {
   useRealShadows: boolean; // Toggle between real shadow mapping and blob shadows
   visibleEntityTypes: Set<EntityType>; // Entity types currently visible
   hierarchyExpanded: Set<string>; // Expanded nodes in hierarchy tree
+  leftSidebarCollapsed: boolean; // Left sidebar collapsed state
+  hierarchySectionExpanded: boolean; // Hierarchy section expanded state
+  healthSectionExpanded: boolean; // Health section expanded state
+  filterSectionExpanded: boolean; // Filter section expanded state
   
   // Monitoring state (Slice 2)
   kpis: KPI[];
@@ -167,6 +171,10 @@ export interface AppState {
   setUseRealShadows: (enabled: boolean) => void;
   toggleEntityType: (entityType: EntityType) => void;
   setVisibleEntityTypes: (types: Set<EntityType>) => void;
+  toggleLeftSidebar: () => void;
+  toggleHierarchySection: () => void;
+  toggleHealthSection: () => void;
+  toggleFilterSection: () => void;
   
   // Monitoring actions (Slice 2)
   loadKPIData: (scenarioId: string) => Promise<void>;

@@ -23,7 +23,6 @@ export default function EntityFilterControl() {
   const setVisibleEntityTypes = useStore((state) => state.setVisibleEntityTypes);
   const searchInventory = useStore((state) => state.searchInventory);
   const selectBox = useStore((state) => state.selectBox);
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [inventorySearch, setInventorySearch] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
 
@@ -63,53 +62,22 @@ export default function EntityFilterControl() {
     setSearchResults([]);
   };
 
-  if (isCollapsed) {
-    return (
-      <button
-        onClick={() => setIsCollapsed(false)}
-        className="glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
-        title="Expand filters"
-      >
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          <span className="text-xs text-gray-400 group-hover:text-gray-200">Filters</span>
-        </div>
-      </button>
-    );
-  }
-
   return (
-    <div className="glass-panel rounded-xl p-4 min-w-[260px] animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
-        <h3 className="text-sm font-medium text-gray-100">
-          Filter Entities
-        </h3>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleAll}
-            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 
-                       text-gray-400 hover:bg-white/10 hover:text-gray-200
-                       transition-all border border-white/5"
-          >
-            {allVisible ? 'Hide All' : 'Show All'}
-          </button>
-          <button
-            onClick={() => setIsCollapsed(true)}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all"
-            title="Collapse"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <div className="w-full">
+      {/* Header - removed, now in parent sidebar */}
+      <div className="flex items-center justify-between mb-3 px-2">
+        <button
+          onClick={handleToggleAll}
+          className="text-xs px-3 py-1.5 rounded-lg bg-white/5 
+                     text-gray-400 hover:bg-white/10 hover:text-gray-200
+                     transition-all border border-white/5"
+        >
+          {allVisible ? 'Hide All' : 'Show All'}
+        </button>
       </div>
 
       {/* Filter Checkboxes */}
-      <div className="space-y-3">
+      <div className="space-y-3 px-2">
         {entityTypes.map(({ type, label, color }) => {
           const count = entityCounts[type] || 0;
           const isVisible = visibleEntityTypes.has(type);
@@ -162,7 +130,7 @@ export default function EntityFilterControl() {
       </div>
 
       {/* Inventory Search */}
-      <div className="mt-4 pt-4 border-t border-white/5">
+      <div className="mt-4 pt-4 border-t border-white/5 px-2">
         <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
           Search Inventory
         </h4>
@@ -226,7 +194,7 @@ export default function EntityFilterControl() {
 
       {/* Warning when all hidden */}
       {noneVisible && (
-        <div className="mt-4 pt-3 border-t border-white/5">
+        <div className="mt-4 pt-3 border-t border-white/5 px-2">
           <p className="text-xs text-amber-400/80 flex items-center gap-2">
             <span className="w-1 h-1 rounded-full bg-amber-400"></span>
             All entity types are hidden

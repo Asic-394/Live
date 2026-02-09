@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import type { AppState, Theme, OverlayType } from '../types';
+import type { AppState, Theme, OverlayType, TickerKPIConfig, LensType, Site } from '../types';
 import { DataService } from '../services/DataService';
 import { MonitoringService } from '../services/MonitoringService';
+import { KPISimulationService } from '../services/KPISimulationService';
+import { DEFAULT_SITE, getDefaultLenses, getLensById } from '../config/lenses';
 
 // Initialize theme from localStorage or system preference
 const getInitialTheme = (): Theme => {
@@ -12,6 +14,49 @@ const getInitialTheme = (): Theme => {
   const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   return systemPreference;
 };
+
+// Initialize ticker KPI configuration from localStorage
+const getInitialTickerConfig = (): Record<string, TickerKPIConfig> => {
+  const stored = localStorage.getItem('warehouse-ticker-config');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
+// Initialize active lenses from localStorage
+const getInitialActiveLenses = (): Set<LensType> => {
+  const stored = localStorage.getItem('warehouse-active-lenses');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as LensType[];
+      return new Set(parsed);
+    } catch {
+      return getDefaultLenses() as Set<LensType>;
+    }
+  }
+  return getDefaultLenses() as Set<LensType>;
+};
+
+// Initialize current site from localStorage
+const getInitialSite = (): Site => {
+  const stored = localStorage.getItem('warehouse-current-site');
+  if (stored) {
+    try {
+      return JSON.parse(stored) as Site;
+    } catch {
+      return DEFAULT_SITE;
+    }
+  }
+  return DEFAULT_SITE;
+};
+
+// Simulation interval reference
+let simulationInterval: NodeJS.Timeout | null = null;
 
 export const useStore = create<AppState>((set, get) => ({
   // Data state
@@ -48,6 +93,14 @@ export const useStore = create<AppState>((set, get) => ({
   drillDownData: null,
   highlightedZones: new Set(),
   focusedZone: null,
+
+  // Ticker configuration
+  tickerKPIs: getInitialTickerConfig(),
+  simulationEnabled: true, // Default to enabled
+
+  // Lens and context state
+  activeLenses: getInitialActiveLenses(),
+  currentSite: getInitialSite(),
 
   // Actions
   loadDataset: async (datasetId: string) => {
@@ -203,6 +256,12 @@ export const useStore = create<AppState>((set, get) => ({
         overlayData: overlayDataMap
       });
       console.log('KPI state updated, kpis count:', enrichedKPIs.length);
+
+      // Initialize simulation base values and start simulation if enabled
+      KPISimulationService.initializeBaseValues(enrichedKPIs);
+      if (get().simulationEnabled) {
+        get().startKPISimulation();
+      }
     } catch (error) {
       console.error('Failed to load KPI data:', error);
       set({ error: error instanceof Error ? error.message : 'Unknown error loading KPI data' });
@@ -367,5 +426,142 @@ export const useStore = create<AppState>((set, get) => ({
         item.category.toLowerCase().includes(lowerQuery)
       );
     });
+  },
+
+  // Ticker configuration actions
+  setTickerKPIVisibility: (kpiId: string, visible: boolean) => {
+    const tickerKPIs = get().tickerKPIs;
+    const currentConfig = tickerKPIs[kpiId] || { visible: true, order: 999 };
+    
+    const newConfig = {
+      ...tickerKPIs,
+      [kpiId]: { ...currentConfig, visible }
+    };
+    
+    set({ tickerKPIs: newConfig });
+    localStorage.setItem('warehouse-ticker-config', JSON.stringify(newConfig));
+  },
+
+  setTickerKPIOrder: (kpiIds: string[]) => {
+    const tickerKPIs = get().tickerKPIs;
+    const newConfig = { ...tickerKPIs };
+    
+    kpiIds.forEach((kpiId, index) => {
+      const currentConfig = newConfig[kpiId] || { visible: true, order: 999 };
+      newConfig[kpiId] = { ...currentConfig, order: index };
+    });
+    
+    set({ tickerKPIs: newConfig });
+    localStorage.setItem('warehouse-ticker-config', JSON.stringify(newConfig));
+  },
+
+  setSimulationEnabled: (enabled: boolean) => {
+    set({ simulationEnabled: enabled });
+    
+    if (enabled) {
+      get().startKPISimulation();
+    } else {
+      get().stopKPISimulation();
+    }
+  },
+
+  startKPISimulation: () => {
+    // Clear existing interval if any
+    if (simulationInterval) {
+      clearInterval(simulationInterval);
+    }
+
+    // Start new simulation interval
+    simulationInterval = setInterval(() => {
+      const currentKPIs = get().kpis;
+      if (currentKPIs.length > 0) {
+        const simulatedKPIs = KPISimulationService.simulateUpdate(currentKPIs);
+        set({ kpis: simulatedKPIs });
+      }
+    }, 4000); // Update every 4 seconds
+
+    console.log('KPI simulation started');
+  },
+
+  stopKPISimulation: () => {
+    if (simulationInterval) {
+      clearInterval(simulationInterval);
+      simulationInterval = null;
+      console.log('KPI simulation stopped');
+    }
+  },
+
+  // Lens and context actions
+  toggleLens: (lensType: LensType) => {
+    const activeLenses = get().activeLenses;
+    
+    // Single-select behavior: only one lens can be active at a time
+    // If clicking the same lens, deselect it (return to full view)
+    // If clicking a different lens, select only that one
+    const newLenses = new Set<LensType>();
+    
+    if (!activeLenses.has(lensType)) {
+      newLenses.add(lensType);
+    }
+    // If activeLenses has lensType, newLenses stays empty (deselect)
+    
+    set({ activeLenses: newLenses });
+    localStorage.setItem('warehouse-active-lenses', JSON.stringify(Array.from(newLenses)));
+    
+    // Apply lens effects
+    get().applyLensEffects();
+  },
+
+  setActiveLenses: (lenses: Set<LensType>) => {
+    set({ activeLenses: lenses });
+    localStorage.setItem('warehouse-active-lenses', JSON.stringify(Array.from(lenses)));
+    
+    // Apply lens effects
+    get().applyLensEffects();
+  },
+
+  setSite: (site: Site) => {
+    set({ currentSite: site });
+    localStorage.setItem('warehouse-current-site', JSON.stringify(site));
+  },
+
+  // Apply effects when lenses change
+  applyLensEffects: () => {
+    const activeLenses = get().activeLenses;
+    
+    if (activeLenses.size === 0) {
+      // No lenses active - show all entities (full warehouse view)
+      set({ 
+        visibleEntityTypes: new Set(['worker', 'forklift', 'pallet', 'inventory', 'truck'])
+      });
+      return;
+    }
+    
+    // Get entity types from the active lens (only one can be active)
+    const lensType = Array.from(activeLenses)[0];
+    const lens = getLensById(lensType);
+    
+    if (lens) {
+      set({ visibleEntityTypes: new Set(lens.entityTypes) as Set<any> });
+    }
+  },
+
+  // Get entities filtered by active lens
+  getEntitiesByLens: () => {
+    const entities = get().entities;
+    const activeLenses = get().activeLenses;
+    
+    if (activeLenses.size === 0) {
+      return entities;
+    }
+    
+    const lensType = Array.from(activeLenses)[0];
+    const lens = getLensById(lensType);
+    
+    if (!lens) {
+      return entities;
+    }
+    
+    return entities.filter(e => lens.entityTypes.includes(e.entity_type));
   },
 }));

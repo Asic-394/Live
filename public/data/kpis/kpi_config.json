@@ -47,6 +47,72 @@
         "watch": { "operator": "above", "value": 0.65 },
         "normal": { "operator": "below", "value": 0.65 }
       }
+    },
+    {
+      "id": "on_time_delivery",
+      "label": "On-Time Delivery",
+      "description": "Percentage of orders delivered on time",
+      "unit": "%",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 85 },
+        "watch": { "operator": "below", "value": 92 },
+        "normal": { "operator": "above", "value": 92 }
+      }
+    },
+    {
+      "id": "order_accuracy",
+      "label": "Order Accuracy",
+      "description": "Percentage of orders picked accurately",
+      "unit": "%",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 95 },
+        "watch": { "operator": "below", "value": 98 },
+        "normal": { "operator": "above", "value": 98 }
+      }
+    },
+    {
+      "id": "dock_utilization",
+      "label": "Dock Utilization",
+      "description": "Percentage of dock doors actively in use",
+      "unit": "%",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 50 },
+        "watch": { "operator": "below", "value": 70 },
+        "normal": { "operator": "between", "value": [70, 90] }
+      }
+    },
+    {
+      "id": "space_utilization",
+      "label": "Space Utilization",
+      "description": "Percentage of warehouse capacity in use",
+      "unit": "%",
+      "thresholds": {
+        "critical": { "operator": "above", "value": 95 },
+        "watch": { "operator": "above", "value": 88 },
+        "normal": { "operator": "between", "value": [70, 88] }
+      }
+    },
+    {
+      "id": "avg_pick_time",
+      "label": "Avg Pick Time",
+      "description": "Average time to pick an order",
+      "unit": "sec",
+      "thresholds": {
+        "critical": { "operator": "above", "value": 180 },
+        "watch": { "operator": "above", "value": 120 },
+        "normal": { "operator": "below", "value": 120 }
+      }
+    },
+    {
+      "id": "equipment_uptime",
+      "label": "Equipment Uptime",
+      "description": "Percentage of forklifts operational",
+      "unit": "%",
+      "thresholds": {
+        "critical": { "operator": "below", "value": 85 },
+        "watch": { "operator": "below", "value": 92 },
+        "normal": { "operator": "above", "value": 92 }
+      }
     }
   ]
 }

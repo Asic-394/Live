@@ -5,7 +5,13 @@
     { "id": "throughput", "value": 52, "trend": 3 },
     { "id": "labor_utilization", "value": 78, "trend": -2 },
     { "id": "orders_at_risk", "value": 2, "trend": -1 },
-    { "id": "zone_congestion", "value": 0.45, "trend": 0 }
+    { "id": "zone_congestion", "value": 0.45, "trend": 0 },
+    { "id": "on_time_delivery", "value": 94.5, "trend": 1 },
+    { "id": "order_accuracy", "value": 98.8, "trend": 0 },
+    { "id": "dock_utilization", "value": 75, "trend": 2 },
+    { "id": "space_utilization", "value": 82, "trend": 1 },
+    { "id": "avg_pick_time", "value": 95, "trend": -3 },
+    { "id": "equipment_uptime", "value": 96, "trend": 0 }
   ],
   "drillDowns": {
     "throughput": {

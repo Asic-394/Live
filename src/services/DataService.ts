@@ -80,6 +80,10 @@ export class DataService {
     const racks = elements.filter((el) => el.element_type === 'rack');
     const docks = elements.filter((el) => el.element_type === 'dock');
     const walls = elements.filter((el) => el.element_type === 'wall');
+    const yards = elements.filter((el) => el.element_type === 'yard');
+    const roads = elements.filter((el) => el.element_type === 'road');
+    const parkings = elements.filter((el) => el.element_type === 'parking');
+    const gates = elements.filter((el) => el.element_type === 'gate');
 
     // Calculate bounds
     const bounds = CoordinateMapper.calculateBounds(elements);
@@ -90,6 +94,10 @@ export class DataService {
       racks,
       docks,
       walls,
+      yards,
+      roads,
+      parkings,
+      gates,
       bounds,
     };
   }
@@ -107,7 +115,7 @@ export class DataService {
 
     // Validate
     const allLayoutElements = layout
-      ? [...layout.zones, ...layout.aisles, ...layout.racks, ...layout.docks, ...layout.walls]
+      ? [...layout.zones, ...layout.aisles, ...layout.racks, ...layout.docks, ...layout.walls, ...layout.yards, ...layout.roads, ...layout.parkings, ...layout.gates]
       : null;
     
     const validation = SchemaValidator.validateState(parseResult.data, allLayoutElements);

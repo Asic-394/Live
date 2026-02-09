@@ -27,34 +27,52 @@ export default function BlobShadow({
   // Theme token: use shadow opacity from theme config if not overridden
   const baseOpacity = opacity ?? config.shadows.blob.opacity;
   
-  // Create radial gradient texture (cached per theme)
+  // Create soft gaussian shadow texture (cached per theme)
   const texture = useMemo(() => {
+    const size = 256;
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
-      const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      const center = size / 2;
+      const imageData = ctx.createImageData(size, size);
+      const data = imageData.data;
       
-      // Theme token: shadow gradient adjusted for mode
-      // Light mode: visible shadows for grounding and depth
-      // Dark mode: deep black shadows for visible grounding
-      if (theme === 'light') {
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
-        gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.3)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      } else {
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        gradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.6)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      // Maximum opacity values for different themes
+      const maxOpacity = theme === 'light' ? 0.20 : 0.28;
+      
+      // Create gaussian shadow with very wide spread for soft blur
+      const sigma = size / 3.5; // Wide spread = softer blur
+      
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const dx = x - center;
+          const dy = y - center;
+          const distSq = dx * dx + dy * dy;
+          
+          // Gaussian distribution formula: e^(-(dist²) / (2σ²))
+          const exponent = -distSq / (2 * sigma * sigma);
+          const alpha = maxOpacity * Math.exp(exponent);
+          
+          const idx = (y * size + x) * 4;
+          data[idx] = 0;     // R
+          data[idx + 1] = 0; // G
+          data[idx + 2] = 0; // B
+          data[idx + 3] = Math.floor(alpha * 255); // A
+        }
       }
       
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 128, 128);
+      ctx.putImageData(imageData, 0, 0);
     }
     
-    return new THREE.CanvasTexture(canvas);
+    const canvasTexture = new THREE.CanvasTexture(canvas);
+    canvasTexture.minFilter = THREE.LinearFilter;
+    canvasTexture.magFilter = THREE.LinearFilter;
+    canvasTexture.needsUpdate = true;
+    
+    return canvasTexture;
   }, [theme]);
   
   // Theme token: calculate size with theme-aware multiplier for grounding emphasis

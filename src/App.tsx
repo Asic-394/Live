@@ -1,22 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from './state/store';
 import WarehouseScene from './components/Scene/WarehouseScene';
-import DatasetSelector from './components/Controls/DatasetSelector';
-import ResetButton from './components/Controls/ResetButton';
 import StatusBar from './components/Controls/StatusBar';
 import EntityDetailPanel from './components/Panels/EntityDetailPanel';
 import ErrorDisplay from './components/Controls/ErrorDisplay';
 import ViewGizmo from './components/UI/ViewGizmo';
-import ThemeToggle from './components/UI/ThemeToggle';
-import ShadowToggle from './components/Controls/ShadowToggle';
 import DrillDownPanel from './components/Panels/DrillDownPanel';
 import OverlayLegend from './components/Controls/OverlayLegend';
 import LeftSidebar from './components/Layout/LeftSidebar';
+import ObjectiveBar from './components/Layout/ObjectiveBar';
+import TopNavBar from './components/Layout/TopNavBar';
 
 function App() {
   const loadDataset = useStore((state) => state.loadDataset);
   const loadingState = useStore((state) => state.loadingState);
   const theme = useStore((state) => state.theme);
+  const stopKPISimulation = useStore((state) => state.stopKPISimulation);
   const controlsRef = useRef<any>(null);
 
   // Load default dataset on mount
@@ -35,22 +34,27 @@ function App() {
     }
   }, [theme]);
 
+  // Cleanup simulation on unmount
+  useEffect(() => {
+    return () => {
+      stopKPISimulation();
+    };
+  }, [stopKPISimulation]);
+
   return (
     <div className="w-full h-full relative bg-gray-200 dark:bg-gradient-to-br dark:from-[#0d0f14] dark:via-[#0a0c11] dark:to-[#08090d]">
-      {/* Left Sidebar - Unified panel for Hierarchy, Health, and Filters */}
+      {/* Objective Bar - Top persistent bar with KPI ticker */}
+      <ObjectiveBar />
+
+      {/* Top Navigation Bar - Below ObjectiveBar with lenses and context controls */}
+      <TopNavBar />
+
+      {/* Left Sidebar - Positioned with top offset to account for both bars */}
       <LeftSidebar />
 
-      {/* Top Controls */}
-      <div className="absolute top-6 left-6 z-10 flex gap-3">
-        <DatasetSelector />
-        <ResetButton />
-      </div>
-
-      {/* Status Bar, Theme Toggle, Shadow Toggle, and Overlay Legend */}
-      <div className="absolute top-6 right-6 z-10 flex gap-3">
+      {/* Status Bar and Overlay Legend - Adjusted position */}
+      <div className="absolute top-28 right-6 z-10 flex gap-3">
         <OverlayLegend />
-        <ShadowToggle />
-        <ThemeToggle />
         <StatusBar />
       </div>
 
@@ -60,11 +64,15 @@ function App() {
       {/* View Gizmo with Camera Controls */}
       <ViewGizmo controlsRef={controlsRef} />
 
-      {/* Entity Detail Panel */}
-      <EntityDetailPanel />
+      {/* Entity Detail Panel - Adjusted top position for both bars */}
+      <div style={{ position: 'absolute', top: '7.5rem', right: '1.5rem', zIndex: 10 }}>
+        <EntityDetailPanel />
+      </div>
 
-      {/* Drill-Down Panel (Slice 2) */}
-      <DrillDownPanel />
+      {/* Drill-Down Panel - Adjusted top position for both bars */}
+      <div style={{ position: 'absolute', top: '7.5rem', right: '1.5rem', zIndex: 10 }}>
+        <DrillDownPanel />
+      </div>
 
       {/* Error Display */}
       <ErrorDisplay />

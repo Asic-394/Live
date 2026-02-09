@@ -122,6 +122,12 @@ export type CameraMode = 'orthographic' | 'perspective';
 // Theme types
 export type Theme = 'light' | 'dark';
 
+// Ticker KPI Configuration
+export interface TickerKPIConfig {
+  visible: boolean;
+  order: number;
+}
+
 // Application State (Zustand store)
 export interface AppState {
   // Data state
@@ -159,6 +165,14 @@ export interface AppState {
   highlightedZones: Set<string>;
   focusedZone: string | null;
   
+  // Ticker configuration
+  tickerKPIs: Record<string, TickerKPIConfig>;
+  simulationEnabled: boolean;
+  
+  // Lens and context state
+  activeLenses: Set<LensType>;
+  currentSite: Site;
+  
   // Actions
   loadDataset: (datasetId: string) => Promise<void>;
   resetScene: () => void;
@@ -191,6 +205,20 @@ export interface AppState {
   getBoxHierarchy: (boxId: string) => string[];
   toggleHierarchyNode: (nodeId: string) => void;
   searchInventory: (query: string) => Box[];
+  
+  // Ticker configuration actions
+  setTickerKPIVisibility: (kpiId: string, visible: boolean) => void;
+  setTickerKPIOrder: (kpiIds: string[]) => void;
+  setSimulationEnabled: (enabled: boolean) => void;
+  startKPISimulation: () => void;
+  stopKPISimulation: () => void;
+  
+  // Lens and context actions
+  toggleLens: (lensType: LensType) => void;
+  setActiveLenses: (lenses: Set<LensType>) => void;
+  setSite: (site: Site) => void;
+  applyLensEffects: () => void;
+  getEntitiesByLens: () => Entity[];
 }
 
 // Three.js coordinate conversion types
@@ -207,6 +235,25 @@ export interface CameraPosition extends Vector3 {
 // KPI and Monitoring Types (Slice 2)
 export type KPIStatus = 'Normal' | 'Watch' | 'Critical';
 export type OverlayType = 'heat_congestion' | 'heat_utilization' | 'heat_throughput';
+
+// Lens and Context Types
+export type LensType = 'inventory' | 'resources' | 'tasks' | 'alerts' | 'inbound' | 'outbound' | 'yard';
+
+export interface Lens {
+  id: LensType;
+  label: string;
+  icon: string;
+  description: string;
+  entityTypes: EntityType[]; // Entities visible in this lens
+  overlayTypes: OverlayType[]; // Relevant overlays
+  kpiCategories: string[]; // Which KPIs to emphasize
+}
+
+export interface Site {
+  id: string;
+  name: string;
+  location: string;
+}
 
 export interface KPI {
   id: string;

@@ -11,7 +11,7 @@ export class SchemaValidator {
   static validateLayout(rows: any[]): ValidationResult {
     const errors: ValidationError[] = [];
     const requiredFields = ['element_type', 'element_id', 'x', 'y', 'width', 'depth'];
-    const validElementTypes: ElementType[] = ['zone', 'aisle', 'rack', 'dock', 'wall'];
+    const validElementTypes: ElementType[] = ['zone', 'aisle', 'rack', 'dock', 'wall', 'yard', 'road', 'parking', 'gate'];
 
     rows.forEach((row, index) => {
       const rowNumber = index + 2; // +2 for header row and 0-indexing
@@ -53,26 +53,28 @@ export class SchemaValidator {
         }
       });
 
-      // Validate coordinate bounds (reasonable warehouse size with buffer for perimeter walls)
-      // Walls can extend slightly beyond the main warehouse floor (-50 to 1500)
-      const isWall = row.element_type === 'wall';
-      const minCoord = isWall ? -50 : 0;
-      const maxCoord = isWall ? 1500 : 1200;
+      // Validate coordinate bounds (reasonable warehouse size with buffer for perimeter walls and yard)
+      // Walls, yard, road, parking, and gate elements can extend beyond main warehouse floor
+      const isExteriorElement = ['wall', 'yard', 'road', 'parking', 'gate'].includes(row.element_type);
+      const minXCoord = isExteriorElement ? -50 : 0;
+      const maxXCoord = isExteriorElement ? 1500 : 1200;
+      const minYCoord = isExteriorElement ? -150 : 0; // Allow negative Y for yard area
+      const maxYCoord = isExteriorElement ? 1500 : 1200;
       
-      if (typeof row.x === 'number' && (row.x < minCoord || row.x > maxCoord)) {
+      if (typeof row.x === 'number' && (row.x < minXCoord || row.x > maxXCoord)) {
         errors.push({
           row: rowNumber,
           field: 'x',
-          message: `X coordinate must be between ${minCoord} and ${maxCoord}`,
+          message: `X coordinate must be between ${minXCoord} and ${maxXCoord}`,
           value: row.x,
         });
       }
 
-      if (typeof row.y === 'number' && (row.y < minCoord || row.y > maxCoord)) {
+      if (typeof row.y === 'number' && (row.y < minYCoord || row.y > maxYCoord)) {
         errors.push({
           row: rowNumber,
           field: 'y',
-          message: `Y coordinate must be between ${minCoord} and ${maxCoord}`,
+          message: `Y coordinate must be between ${minYCoord} and ${maxYCoord}`,
           value: row.y,
         });
       }
@@ -107,7 +109,7 @@ export class SchemaValidator {
   static validateState(rows: any[], layout: WarehouseLayoutElement[] | null = null): ValidationResult {
     const errors: ValidationError[] = [];
     const requiredFields = ['entity_type', 'entity_id', 'zone', 'x', 'y', 'status'];
-    const validEntityTypes: EntityType[] = ['worker', 'forklift', 'pallet', 'inventory'];
+    const validEntityTypes: EntityType[] = ['worker', 'forklift', 'pallet', 'inventory', 'truck'];
 
     // Collect valid zone IDs from layout
     const validZoneIds = layout ? new Set(layout.map((el) => el.element_id)) : null;
@@ -152,7 +154,7 @@ export class SchemaValidator {
         }
       });
 
-      // Validate coordinate bounds
+      // Validate coordinate bounds (allow negative Y for trucks in yard)
       if (typeof row.x === 'number' && (row.x < 0 || row.x > 1000)) {
         errors.push({
           row: rowNumber,
@@ -162,11 +164,11 @@ export class SchemaValidator {
         });
       }
 
-      if (typeof row.y === 'number' && (row.y < 0 || row.y > 1000)) {
+      if (typeof row.y === 'number' && (row.y < -150 || row.y > 1000)) {
         errors.push({
           row: rowNumber,
           field: 'y',
-          message: 'Y coordinate must be between 0 and 1000',
+          message: 'Y coordinate must be between -150 and 1000',
           value: row.y,
         });
       }

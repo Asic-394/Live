@@ -2,6 +2,7 @@ import { useStore } from '../../state/store';
 import HierarchyPanel from '../Panels/HierarchyPanel';
 import KPIPanel from '../Panels/KPIPanel';
 import EntityFilterControl from '../Controls/EntityFilterControl';
+import { getLensById } from '../../config/lenses';
 
 export default function LeftSidebar() {
   const leftSidebarCollapsed = useStore((state) => state.leftSidebarCollapsed);
@@ -12,10 +13,35 @@ export default function LeftSidebar() {
   const toggleHierarchySection = useStore((state) => state.toggleHierarchySection);
   const toggleHealthSection = useStore((state) => state.toggleHealthSection);
   const toggleFilterSection = useStore((state) => state.toggleFilterSection);
+  const activeLenses = useStore((state) => state.activeLenses);
+
+  // Get dynamic hierarchy title based on active lens
+  const getHierarchyTitle = () => {
+    if (activeLenses.size === 0) {
+      return 'Warehouse Hierarchy';
+    }
+    
+    const lensType = Array.from(activeLenses)[0];
+    const lens = getLensById(lensType);
+    
+    if (!lens) return 'Warehouse Hierarchy';
+    
+    const hierarchyTitles: Record<string, string> = {
+      inventory: 'Inventory Hierarchy',
+      resources: 'Resource Allocation',
+      tasks: 'Task Overview',
+      alerts: 'Alert Zones',
+      inbound: 'Inbound Operations',
+      outbound: 'Outbound Operations',
+      yard: 'Yard Operations'
+    };
+    
+    return hierarchyTitles[lensType] || 'Warehouse Hierarchy';
+  };
 
   if (leftSidebarCollapsed) {
     return (
-      <div className="fixed left-0 top-0 h-screen z-10 flex flex-col transition-all duration-300">
+      <div className="fixed left-0 top-[104px] h-[calc(100vh-104px)] z-[5] flex flex-col transition-all duration-300">
         {/* Collapsed sidebar - thin bar with icons */}
         <div className="glass-panel rounded-r-xl h-full w-12 flex flex-col items-center py-4 gap-3 animate-fade-in">
           {/* Expand button */}
@@ -76,11 +102,11 @@ export default function LeftSidebar() {
   }
 
   return (
-    <div className="fixed left-0 top-0 h-screen z-10 flex flex-col transition-all duration-300 animate-fade-in">
+    <div className="fixed left-0 top-[104px] h-[calc(100vh-104px)] z-[5] flex flex-col transition-all duration-300 animate-fade-in">
       {/* Expanded sidebar */}
       <div className="glass-panel rounded-r-xl h-full w-[400px] flex flex-col overflow-hidden shadow-2xl">
         {/* Header with collapse button */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-100">Warehouse Control</h2>
           <button
             onClick={toggleLeftSidebar}
@@ -133,7 +159,7 @@ export default function LeftSidebar() {
                 <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                <h3 className="text-sm font-semibold text-blue-400">Warehouse Hierarchy</h3>
+                <h3 className="text-sm font-semibold text-blue-400">{getHierarchyTitle()}</h3>
               </div>
               <svg
                 className={`w-5 h-5 text-gray-400 transition-transform ${hierarchySectionExpanded ? 'rotate-180' : ''}`}

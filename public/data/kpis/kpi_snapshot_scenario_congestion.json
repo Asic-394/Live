@@ -16,30 +16,33 @@
   "drillDowns": {
     "throughput": {
       "drivers": [
-        { "label": "Zone-C", "value": 12, "contribution": 32, "zone": "Zone-C" },
-        { "label": "Zone-B", "value": 16, "contribution": 42, "zone": "Zone-B" },
-        { "label": "Zone-A", "value": 10, "contribution": 26, "zone": "Zone-A" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 20, "contribution": 38, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 16, "contribution": 30, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 12, "contribution": 23, "zone": "Zone-B3" },
+        { "label": "Zone-A", "value": 10, "contribution": 19, "zone": "Zone-A" }
       ]
     },
     "labor_utilization": {
       "drivers": [
-        { "label": "Zone-C", "value": 92, "contribution": 45, "zone": "Zone-C" },
-        { "label": "Zone-B", "value": 78, "contribution": 32, "zone": "Zone-B" },
-        { "label": "Zone-A", "value": 75, "contribution": 23, "zone": "Zone-A" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 90, "contribution": 40, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 85, "contribution": 30, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 78, "contribution": 25, "zone": "Zone-B3" },
+        { "label": "Zone-A", "value": 75, "contribution": 20, "zone": "Zone-A" }
       ]
     },
     "orders_at_risk": {
       "drivers": [
-        { "label": "Zone-C", "value": 8, "contribution": 67, "zone": "Zone-C" },
-        { "label": "Zone-B", "value": 3, "contribution": 25, "zone": "Zone-B" },
+        { "label": "Zone-B1 (Fast-Pick)", "value": 8, "contribution": 67, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 3, "contribution": 25, "zone": "Zone-B2" },
         { "label": "Zone-D", "value": 1, "contribution": 8, "zone": "Zone-D" }
       ]
     },
     "zone_congestion": {
       "drivers": [
-        { "label": "Zone-C", "value": 0.85, "contribution": 55, "zone": "Zone-C" },
-        { "label": "Zone-B", "value": 0.62, "contribution": 30, "zone": "Zone-B" },
-        { "label": "Zone-A", "value": 0.38, "contribution": 15, "zone": "Zone-A" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 0.75, "contribution": 45, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 0.62, "contribution": 30, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 0.52, "contribution": 25, "zone": "Zone-B3" },
+        { "label": "Zone-A", "value": 0.38, "contribution": 18, "zone": "Zone-A" }
       ]
     }
   }

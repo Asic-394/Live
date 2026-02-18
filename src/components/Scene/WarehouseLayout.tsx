@@ -142,13 +142,57 @@ function calculateWallSegments(wall: WarehouseLayoutElement): WallSegment[] {
   return segments;
 }
 
+/** Rack's hierarchy.parent_id = aisle id; aisle's parent_id = zone id.
+ *  Falls back to spatial containment when the hierarchy path is broken
+ *  (e.g. racks assigned to a cross-aisle that has no zone parent). */
+function getZoneIdForRack(rack: WarehouseLayoutElement, layout: WarehouseLayout): string | null {
+  // 1. Try hierarchy path first
+  const aisleId = rack.hierarchy?.parent_id;
+  if (aisleId) {
+    const aisle = layout.aisles.find((a) => a.element_id === aisleId);
+    const zoneId = aisle?.hierarchy?.parent_id ?? null;
+    if (zoneId) return zoneId;
+  }
+
+  // 2. Spatial fallback: find the zone whose bounding box contains the rack centre
+  for (const zone of layout.zones) {
+    const zoneMinX = zone.x - zone.width / 2;
+    const zoneMaxX = zone.x + zone.width / 2;
+    const zoneMinY = zone.y - zone.depth / 2;
+    const zoneMaxY = zone.y + zone.depth / 2;
+    if (
+      rack.x >= zoneMinX && rack.x <= zoneMaxX &&
+      rack.y >= zoneMinY && rack.y <= zoneMaxY
+    ) {
+      return zone.element_id;
+    }
+  }
+
+  // 3. Nearest zone by centre distance as last resort
+  let nearestZone: WarehouseLayoutElement | null = null;
+  let minDist = Infinity;
+  for (const zone of layout.zones) {
+    const dx = rack.x - zone.x;
+    const dy = rack.y - zone.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < minDist) {
+      minDist = dist;
+      nearestZone = zone;
+    }
+  }
+  return nearestZone?.element_id ?? null;
+}
+
 export default function WarehouseLayoutComponent({ layout }: Props) {
   const [hoveredRack, setHoveredRack] = useState<string | null>(null);
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [cameraDistance, setCameraDistance] = useState<number>(200);
+  const selectedZone = useStore((state) => state.selectedZone);
   const selectedRack = useStore((state) => state.selectedRack);
+  const selectZone = useStore((state) => state.selectZone);
   const selectRack = useStore((state) => state.selectRack);
   const selectEntity = useStore((state) => state.selectEntity);
+  const focusOnZone = useStore((state) => state.focusOnZone);
   const theme = useStore((state) => state.theme);
   const useRealShadows = useStore((state) => state.useRealShadows);
   const themeConfig = useSceneTheme();
@@ -200,6 +244,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
         const isStaging = zoneName.toLowerCase().includes('staging');
         const isStoragePicking = isStorage && isPicking; // Combined zone
         const isHovered = hoveredZone === zone.element_id;
+        const isZoneSelected = selectedZone === zone.element_id;
         
         // Zone-specific colors - theme token driven
         let zoneColor = themeConfig.colors.zoneDefault;
@@ -225,43 +270,79 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
           outlineColor = themeConfig.colors.zoneStagingOutline;
         }
         
+        const handleZoneClick = (e: any) => {
+          e.stopPropagation();
+          if (isZoneSelected) {
+            selectZone(null);
+          } else {
+            selectZone(zone.element_id);
+            focusOnZone(zone.element_id, true);
+          }
+        };
+        const handleZonePointerOver = (e: any) => {
+          e.stopPropagation();
+          setHoveredZone(zone.element_id);
+          document.body.style.cursor = 'pointer';
+        };
+        const handleZonePointerOut = () => {
+          setHoveredZone(null);
+          document.body.style.cursor = 'auto';
+        };
+
         return (
           <group key={zone.element_id}>
-            {/* Thin zone outline border (primary) */}
-            <lineSegments 
+            {/* Zone outline border - hover/click target */}
+            <lineSegments
               position={[pos.x, 0.15, pos.z]}
-              onPointerOver={() => setHoveredZone(zone.element_id)}
-              onPointerOut={() => setHoveredZone(null)}
+              onClick={handleZoneClick}
+              onPointerOver={handleZonePointerOver}
+              onPointerOut={handleZonePointerOut}
             >
               <edgesGeometry
                 args={[new THREE.BoxGeometry(zone.width, 0.1, zone.depth)]}
               />
               <lineBasicMaterial 
-                color={outlineColor}
+                color={isZoneSelected ? themeConfig.colors.selectionGlow : outlineColor}
                 linewidth={3}
                 transparent
-                opacity={isHovered ? 1.0 : 0.8}
+                opacity={isZoneSelected ? 0.5 : isHovered ? 1.0 : 0.8}
               />
             </lineSegments>
             
-            {/* Zone floor area - subtle 6% fill */}
+            {/* Zone floor area - main hover/click target and subtle fill */}
             <mesh 
               position={[pos.x, 0.05, pos.z]} 
               rotation={[-Math.PI / 2, 0, 0]}
+              onClick={handleZoneClick}
+              onPointerOver={handleZonePointerOver}
+              onPointerOut={handleZonePointerOut}
             >
               <planeGeometry args={[zone.width, zone.depth]} />
               <meshStandardMaterial
-                color={zoneColor}
+                color={isZoneSelected ? themeConfig.colors.selectionGlow : zoneColor}
                 transparent
-                opacity={0.06}
+                opacity={isZoneSelected ? 0.18 : isHovered ? 0.10 : 0.06}
                 roughness={0.7}
-                emissive={isHovered ? zoneColor : '#000000'}
-                emissiveIntensity={isHovered ? 0.15 : 0}
+                emissive={isZoneSelected ? themeConfig.colors.selectionGlow : isHovered ? zoneColor : '#000000'}
+                emissiveIntensity={isZoneSelected ? 0.6 : isHovered ? 0.15 : 0}
               />
             </mesh>
 
+            {/* Prominent selection border - only shown when zone is selected */}
+            {isZoneSelected && (
+              <lineSegments position={[pos.x, 0.3, pos.z]}>
+                <edgesGeometry args={[new THREE.BoxGeometry(zone.width, 0.1, zone.depth)]} />
+                <lineBasicMaterial
+                  color={themeConfig.colors.selectionGlow}
+                  linewidth={6}
+                  transparent
+                  opacity={1.0}
+                />
+              </lineSegments>
+            )}
+
             {/* Zone label with LOD-based opacity - only render if visible */}
-            {(zoneLabelOpacity > 0 || isHovered) ? (
+            {(zoneLabelOpacity > 0 || isHovered || isZoneSelected) ? (
               <Text
                 position={[pos.x, 0.5, pos.z]}
                 rotation={[-Math.PI / 2, 0, 0]}
@@ -269,7 +350,7 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
                 color={themeConfig.colors.zoneLabelColor}
                 anchorX="center"
                 anchorY="middle"
-                fillOpacity={isHovered ? 1.0 : zoneLabelOpacity}
+                fillOpacity={isZoneSelected || isHovered ? 1.0 : zoneLabelOpacity}
               >
                 {zone.name || zone.element_id}
               </Text>
@@ -411,9 +492,13 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
       {layout.racks.map((rack) => {
         const pos = CoordinateMapper.csvToThree(rack.x, rack.y, rack.z || 0);
         const height = rack.height || 18;
+        const zoneIdForRack = getZoneIdForRack(rack, layout);
+        const isRackInSelectedZone = Boolean(selectedZone && zoneIdForRack === selectedZone);
         const isSelected = selectedRack === rack.element_id;
         const isHovered = hoveredRack === rack.element_id;
-        const isDimmed = Boolean(selectedRack && !isSelected && !isHovered);
+        const isDimmed =
+          (selectedZone && !isRackInSelectedZone) ||
+          Boolean(selectedRack && !isSelected && !isHovered);
         
         // Convert rotation from degrees to radians (rotation around Y-axis)
         const rotationY = ((rack.rotation || 0) * Math.PI) / 180;
@@ -442,14 +527,18 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
             position={[pos.x, 0, pos.z]}
             rotation={[0, rotationY, 0]}
             onClick={(e) => {
+              // Only intercept the click when we're going to act on it.
+              // If the rack is already selected, let the event propagate so
+              // box clicks (instanced meshes underneath) can be handled.
+              if (!isRackInSelectedZone || isSelected) return;
               e.stopPropagation();
-              selectRack(isSelected ? null : rack.element_id);
-              selectEntity(null); // Clear entity selection when rack is clicked
+              selectRack(rack.element_id);
+              selectEntity(null);
             }}
             onPointerOver={(e) => {
               e.stopPropagation();
               setHoveredRack(rack.element_id);
-              document.body.style.cursor = 'pointer';
+              document.body.style.cursor = isRackInSelectedZone ? 'pointer' : 'auto';
             }}
             onPointerOut={() => {
               setHoveredRack(null);
@@ -490,8 +579,9 @@ export default function WarehouseLayoutComponent({ layout }: Props) {
               width={rack.width}
               height={height}
               depth={rack.depth}
-              levels={rack.metadata?.levels || 7}
+              levels={rack.metadata?.levels || 3}
               isDimmed={isDimmed}
+              isSelected={isSelected}
               cameraDistance={cameraDistance}
             />
 

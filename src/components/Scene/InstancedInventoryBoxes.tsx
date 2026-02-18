@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from '../../state/store';
@@ -10,9 +10,11 @@ import { MaterialPool } from '../../utils/MaterialPool';
 import type { Box } from '../../types';
 
 /**
- * High-performance instanced rendering for inventory boxes
- * Groups boxes by status and renders using InstancedMesh
- * Reduces draw calls from ~6000 to ~4
+ * High-performance instanced rendering for inventory boxes.
+ * Groups boxes by status and renders using InstancedMesh (reduces draw calls from ~6000 to ~4).
+ *
+ * Hover is handled imperatively via refs + direct GPU buffer writes so it never
+ * triggers a React re-render or a full instance-matrix rebuild.
  */
 export default function InstancedInventoryBoxes() {
   const boxes = useStore((state) => state.boxes);
@@ -26,13 +28,6 @@ export default function InstancedInventoryBoxes() {
   const colors = config.colors;
   const { raycaster, pointer, camera, gl } = useThree();
 
-  // Log when component mounts
-  useEffect(() => {
-    console.log('🎨 InstancedInventoryBoxes component mounted - ID:', Math.random().toString(36).substr(2, 9));
-    console.log('📦 Initial boxes count:', boxes.length);
-    return () => console.log('🎨 InstancedInventoryBoxes component unmounted');
-  }, []);
-
   // Refs for instanced meshes
   const storedRef = useRef<THREE.InstancedMesh>(null);
   const stagedRef = useRef<THREE.InstancedMesh>(null);
@@ -40,16 +35,18 @@ export default function InstancedInventoryBoxes() {
   const emptyRef = useRef<THREE.InstancedMesh>(null);
   const selectedRef = useRef<THREE.InstancedMesh>(null);
 
-  // Hover state
-  const [hoveredBoxId, setHoveredBoxId] = useState<string | null>(null);
-  const hoveredRef = useRef<THREE.InstancedMesh>(null);
+  // Hover tracking — never touches React state to avoid re-renders
+  const hoveredBoxIdRef = useRef<string | null>(null);
+  const hoveredOrigColor = useRef(new THREE.Color());
+  // Maps box_id → { mesh, instanceIdx } built after each instance update
+  const boxInstanceMap = useRef<Map<string, { mesh: THREE.InstancedMesh; idx: number }>>(new Map());
 
-  // Shared geometry and materials from pools
+  // Shared geometry and materials
   const boxGeometry = useMemo(() => GeometryPool.getBox(2.5, 2.5, 2.5), []);
 
   const materials = useMemo(() => ({
     stored: MaterialPool.getStandardMaterial({
-      color: '#d1d5db', // Light gray for better visibility
+      color: '#d1d5db',
       roughness: 0.6,
       metalness: 0.2,
     }),
@@ -69,22 +66,15 @@ export default function InstancedInventoryBoxes() {
       metalness: 0.2,
     }),
     selected: MaterialPool.getStandardMaterial({
-      color: colors.inventorySelected || '#4ade80',
+      color: colors.inventorySelected || '#a855f7',
       roughness: 0.6,
       metalness: 0.2,
-      emissive: colors.inventorySelected || '#4ade80',
+      emissive: colors.inventorySelected || '#a855f7',
       emissiveIntensity: config.effects.selection.emissiveIntensity * 0.3,
-    }),
-    hovered: MaterialPool.getStandardMaterial({
-      color: '#60a5fa', // Blue for hover
-      roughness: 0.6,
-      metalness: 0.2,
-      emissive: '#60a5fa',
-      emissiveIntensity: config.effects.hover.emissiveIntensity,
     }),
   }), [colors, config]);
 
-  // Group boxes by status
+  // Group boxes by status — hover is no longer a group; it is handled imperatively
   const boxGroups = useMemo(() => {
     const groups: Record<string, Box[]> = {
       stored: [],
@@ -92,166 +82,133 @@ export default function InstancedInventoryBoxes() {
       in_transit: [],
       empty: [],
       selected: [],
-      hovered: [],
     };
-    
-    console.log('📊 Grouping boxes...');
 
     boxes.forEach((box) => {
       if (box.box_id === selectedBox) {
         groups.selected.push(box);
-      } else if (box.box_id === hoveredBoxId) {
-        groups.hovered.push(box);
       } else {
         groups[box.status]?.push(box);
       }
     });
 
-    console.log('✅ Box groups created:', Object.keys(groups).map(k => `${k}:${groups[k].length}`).join(', '));
     return groups;
-  }, [boxes, selectedBox, hoveredBoxId]);
-  
-  // Log every render to detect duplicates
-  console.log('🔄 InstancedInventoryBoxes RENDER', { boxCount: boxes.length, groupCounts: Object.keys(boxGroups).map(k => `${k}:${boxGroups[k].length}`).join(', ') });
+  }, [boxes, selectedBox]);
 
-  // Update instance matrices
+  // Update instance matrices + colors, then rebuild the fast lookup map
   useEffect(() => {
-    console.log('🔄 useEffect triggered for updating instances');
-    console.log('Conditions:', { 
-      hasBoxes: boxes.length, 
-      hasLayout: !!warehouseLayout,
-      storedCount: boxGroups.stored.length,
-      stagedCount: boxGroups.staged.length 
-    });
-    
     const updateInstances = (
       ref: React.RefObject<THREE.InstancedMesh>,
       boxList: Box[],
-      groupName: string
     ) => {
-      if (!ref.current || !warehouseLayout) {
-        if (boxList.length > 0) {
-          console.warn(`❌ Cannot update ${groupName} instances:`, { hasRef: !!ref.current, hasLayout: !!warehouseLayout, boxCount: boxList.length });
-        }
-        return;
-      }
-      
-      console.log(`🎯 Updating ${groupName}: ${boxList.length} instances`);
+      if (!ref.current || !warehouseLayout) return;
 
       const mesh = ref.current;
       const matrix = new THREE.Matrix4();
-      const opacity = selectedRack ? 0.4 : 1.0;
-
+      const baseOpacity = selectedRack ? 0.4 : 1.0;
 
       boxList.forEach((box, i) => {
-        // Get position based on rack slot or coordinates
         const rack = warehouseLayout.racks.find((r) => r.element_id === box.rack_id);
-        
+
         let pos: { x: number; y: number; z: number };
-        
         if (rack) {
-          // Get slot position RELATIVE to rack
           const slotPos = RackSlots.getSlotPosition(box.level, box.position, {
             width: rack.width,
             height: rack.height || 20,
             depth: rack.depth,
           });
-          
-          // Convert rack's CSV coordinates to THREE.js world space
           const rackWorldPos = CoordinateMapper.csvToThree(rack.x, rack.y, rack.z || 0);
-          
-          // Apply rack rotation to slot offset
           const rotationY = ((rack.rotation || 0) * Math.PI) / 180;
           const cosR = Math.cos(rotationY);
           const sinR = Math.sin(rotationY);
-          
-          // Rotate slot offset around Y-axis
           const rotatedX = slotPos.x * cosR - slotPos.z * sinR;
           const rotatedZ = slotPos.x * sinR + slotPos.z * cosR;
-          
-          // Add rotated slot offset to rack world position
           pos = {
             x: rackWorldPos.x + rotatedX,
-            y: slotPos.y,  // Y is absolute (height from ground)
+            y: slotPos.y,
             z: rackWorldPos.z + rotatedZ,
           };
         } else {
-          // Fallback to box's own coordinates
           pos = CoordinateMapper.csvToThree(box.x, box.y, box.z);
         }
 
-        // Check if box should be dimmed (not in selected rack)
         const isInSelectedRack = selectedRack && box.rack_id === selectedRack;
         const isDimmed = Boolean(selectedRack && !isInSelectedRack && box.box_id !== selectedBox);
-        const finalOpacity = isDimmed ? 0.4 : opacity;
+        const finalOpacity = isDimmed ? 0.4 : baseOpacity;
 
-        // Add realistic variation per box using deterministic randomization
-        // Seed based on box_id for consistent but unique variations
+        // Deterministic per-box variation seeded from box_id
         const seed = box.box_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const random = (offset: number) => {
           const x = Math.sin(seed + offset) * 10000;
           return x - Math.floor(x);
         };
 
-        // Calculate base scale to fit boxes within slots
-        // Rack has 3 positions per shelf with gaps
         const gapBetweenBoxes = 0.5;
-        const totalGapSpace = gapBetweenBoxes * 2; // 2 gaps for 3 boxes
-        const availableWidth = rack ? rack.width - totalGapSpace : 15;
+        const availableWidth = rack ? rack.width - gapBetweenBoxes * 2 : 15;
         const slotWidth = availableWidth / 3;
-        const baseBoxSize = 2.5; // Default geometry size
-        const baseScale = (slotWidth / baseBoxSize) * 0.95; // 0.95 to leave small gaps
-        
-        // Subtle scale variation (95-105%) on top of base scale
+        const baseScale = (slotWidth / 2.5) * 0.95;
         const scaleVariation = baseScale * (0.95 + random(4) * 0.10);
-
-        // Small position offsets for organic placement
         const offsetX = (random(2) - 0.5) * 0.2;
         const offsetZ = (random(3) - 0.5) * 0.2;
 
-        // Compose transformation matrix: Scale -> Translate (no rotation)
-        const position = new THREE.Vector3(pos.x + offsetX, pos.y, pos.z + offsetZ);
-        const quaternion = new THREE.Quaternion(); // Identity rotation (no rotation)
-        const scale = new THREE.Vector3(scaleVariation, scaleVariation, scaleVariation);
-        
-        matrix.compose(position, quaternion, scale);
+        matrix.compose(
+          new THREE.Vector3(pos.x + offsetX, pos.y, pos.z + offsetZ),
+          new THREE.Quaternion(),
+          new THREE.Vector3(scaleVariation, scaleVariation, scaleVariation),
+        );
         mesh.setMatrixAt(i, matrix);
 
-        // Set color/opacity per instance (for dimming) + subtle color variation
         if (mesh.instanceColor && mesh.material instanceof THREE.MeshStandardMaterial) {
           const color = new THREE.Color();
           color.setStyle(mesh.material.color.getStyle());
-          
-          // Subtle color variation for realism (90-110% brightness)
+
+          // Per-box brightness variation
           color.r = Math.min(1, color.r * (0.90 + random(6) * 0.20));
           color.g = Math.min(1, color.g * (0.90 + random(7) * 0.20));
           color.b = Math.min(1, color.b * (0.90 + random(8) * 0.20));
-          
+
+          // Blend toward selection color for boxes inside the selected rack
+          if (isInSelectedRack) {
+            const selColor = new THREE.Color(colors.rackSelected);
+            color.r = color.r * 0.45 + selColor.r * 0.55;
+            color.g = color.g * 0.45 + selColor.g * 0.55;
+            color.b = color.b * 0.45 + selColor.b * 0.55;
+          }
+
           color.multiplyScalar(finalOpacity);
           mesh.instanceColor.setXYZ(i, color.r, color.g, color.b);
         }
       });
 
       mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) {
-        mesh.instanceColor.needsUpdate = true;
-      }
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.computeBoundingSphere();
-      
-      console.log(`✅ Updated ${groupName}: ${boxList.length} instances positioned`);
     };
 
-    updateInstances(storedRef, boxGroups.stored, 'stored');
-    updateInstances(stagedRef, boxGroups.staged, 'staged');
-    updateInstances(transitRef, boxGroups.in_transit, 'in_transit');
-    updateInstances(emptyRef, boxGroups.empty, 'empty');
-    updateInstances(selectedRef, boxGroups.selected, 'selected');
-    updateInstances(hoveredRef, boxGroups.hovered, 'hovered');
-    
-    console.log('✅ All instance updates complete');
-  }, [boxGroups, warehouseLayout, selectedRack, selectedBox]);
+    updateInstances(storedRef, boxGroups.stored);
+    updateInstances(stagedRef, boxGroups.staged);
+    updateInstances(transitRef, boxGroups.in_transit);
+    updateInstances(emptyRef, boxGroups.empty);
+    updateInstances(selectedRef, boxGroups.selected);
 
-  // Raycasting for selection and hover
+    // Rebuild the box → {mesh, idx} lookup map so useFrame can address instances directly
+    const map = new Map<string, { mesh: THREE.InstancedMesh; idx: number }>();
+    const register = (ref: React.RefObject<THREE.InstancedMesh>, list: Box[]) => {
+      if (!ref.current) return;
+      list.forEach((box, idx) => map.set(box.box_id, { mesh: ref.current!, idx }));
+    };
+    register(storedRef, boxGroups.stored);
+    register(stagedRef, boxGroups.staged);
+    register(transitRef, boxGroups.in_transit);
+    register(emptyRef, boxGroups.empty);
+    register(selectedRef, boxGroups.selected);
+    boxInstanceMap.current = map;
+
+    // Clear any stale hover state since the buffers were just rebuilt
+    hoveredBoxIdRef.current = null;
+  }, [boxGroups, warehouseLayout, selectedRack, selectedBox, colors.rackSelected]);
+
+  // Raycasting for hover + click — zero React state updates, zero re-renders
   useFrame(() => {
     if (!raycaster || !pointer) return;
 
@@ -263,97 +220,84 @@ export default function InstancedInventoryBoxes() {
       transitRef.current,
       emptyRef.current,
       selectedRef.current,
-      hoveredRef.current,
     ].filter((m): m is THREE.InstancedMesh => m !== null);
 
     const intersects = raycaster.intersectObjects(meshes, false);
 
+    let newHoveredId: string | null = null;
+
     if (intersects.length > 0) {
-      const intersection = intersects[0];
-      const instanceId = intersection.instanceId;
+      const hit = intersects[0];
+      const instanceId = hit.instanceId;
 
-      if (instanceId !== undefined && intersection.object instanceof THREE.InstancedMesh) {
-        // Find which group this mesh belongs to
+      if (instanceId !== undefined && hit.object instanceof THREE.InstancedMesh) {
         let boxId: string | null = null;
-
-        if (intersection.object === storedRef.current && instanceId < boxGroups.stored.length) {
+        if (hit.object === storedRef.current && instanceId < boxGroups.stored.length) {
           boxId = boxGroups.stored[instanceId].box_id;
-        } else if (intersection.object === stagedRef.current && instanceId < boxGroups.staged.length) {
+        } else if (hit.object === stagedRef.current && instanceId < boxGroups.staged.length) {
           boxId = boxGroups.staged[instanceId].box_id;
-        } else if (intersection.object === transitRef.current && instanceId < boxGroups.in_transit.length) {
+        } else if (hit.object === transitRef.current && instanceId < boxGroups.in_transit.length) {
           boxId = boxGroups.in_transit[instanceId].box_id;
-        } else if (intersection.object === emptyRef.current && instanceId < boxGroups.empty.length) {
+        } else if (hit.object === emptyRef.current && instanceId < boxGroups.empty.length) {
           boxId = boxGroups.empty[instanceId].box_id;
-        } else if (intersection.object === selectedRef.current && instanceId < boxGroups.selected.length) {
+        } else if (hit.object === selectedRef.current && instanceId < boxGroups.selected.length) {
           boxId = boxGroups.selected[instanceId].box_id;
-        } else if (intersection.object === hoveredRef.current && instanceId < boxGroups.hovered.length) {
-          boxId = boxGroups.hovered[instanceId].box_id;
         }
 
-        if (boxId && boxId !== hoveredBoxId) {
-          setHoveredBoxId(boxId);
-          gl.domElement.style.cursor = 'pointer';
+        if (boxId) {
+          const box = boxes.find((b) => b.box_id === boxId);
+          if (selectedRack && box && box.rack_id === selectedRack) {
+            newHoveredId = boxId;
+          }
         }
       }
-    } else if (hoveredBoxId) {
-      setHoveredBoxId(null);
-      gl.domElement.style.cursor = 'auto';
+    }
+
+    gl.domElement.style.cursor = newHoveredId ? 'pointer' : 'auto';
+
+    if (newHoveredId === hoveredBoxIdRef.current) return;
+
+    // Restore the previously hovered instance's original color
+    if (hoveredBoxIdRef.current) {
+      const info = boxInstanceMap.current.get(hoveredBoxIdRef.current);
+      if (info?.mesh.instanceColor) {
+        info.mesh.instanceColor.setXYZ(info.idx, hoveredOrigColor.current.r, hoveredOrigColor.current.g, hoveredOrigColor.current.b);
+        info.mesh.instanceColor.needsUpdate = true;
+      }
+    }
+
+    hoveredBoxIdRef.current = newHoveredId;
+
+    // Apply hover tint to the newly hovered instance
+    if (newHoveredId) {
+      const info = boxInstanceMap.current.get(newHoveredId);
+      if (info?.mesh.instanceColor) {
+        // Save current color so we can restore it on un-hover
+        hoveredOrigColor.current.set(
+          info.mesh.instanceColor.getX(info.idx),
+          info.mesh.instanceColor.getY(info.idx),
+          info.mesh.instanceColor.getZ(info.idx),
+        );
+        const hoverColor = new THREE.Color('#60a5fa');
+        info.mesh.instanceColor.setXYZ(info.idx, hoverColor.r, hoverColor.g, hoverColor.b);
+        info.mesh.instanceColor.needsUpdate = true;
+      }
     }
   });
 
-  // Handle click events
-  const handleClick = (event: any) => {
-    if (event.stopPropagation) {
-      event.stopPropagation();
-    }
-    
-    if (hoveredBoxId) {
-      selectBox(hoveredBoxId);
+  // Click handler reads from the ref — no state dependency
+  const handleClick = (event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+    const id = hoveredBoxIdRef.current;
+    if (!id) return;
+    const box = boxes.find((b) => b.box_id === id);
+    if (selectedRack && box && box.rack_id === selectedRack) {
+      selectBox(id);
     }
   };
 
-  // Debug: log box counts and verify variations (only once when boxes change)
-  useEffect(() => {
-    if (boxes.length > 0) {
-      console.log('📦 Box counts:', {
-        total: boxes.length,
-        stored: boxGroups.stored.length,
-        staged: boxGroups.staged.length,
-        in_transit: boxGroups.in_transit.length,
-        empty: boxGroups.empty.length,
-      });
-      
-      // Log sample box to verify variations are being applied
-      if (boxGroups.stored.length > 0) {
-        const sampleBox = boxGroups.stored[0];
-        const seed = sampleBox.box_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const random = (offset: number) => {
-          const x = Math.sin(seed + offset) * 10000;
-          return x - Math.floor(x);
-        };
-        console.log('🎲 Sample box variations:', {
-          box_id: sampleBox.box_id,
-          rotation: ((random(1) - 0.5) * 0.52 * 180 / Math.PI).toFixed(1) + '°',
-          offsetX: ((random(2) - 0.5) * 0.5).toFixed(2),
-          offsetZ: ((random(3) - 0.5) * 0.5).toFixed(2),
-          scale: (0.90 + random(4) * 0.2).toFixed(2),
-        });
-      }
-    }
-  }, [boxes.length, boxGroups.stored.length]);
-
-  console.log('📊 About to render instancedMeshes:', {
-    stored: boxGroups.stored.length,
-    staged: boxGroups.staged.length,
-    in_transit: boxGroups.in_transit.length,
-    empty: boxGroups.empty.length,
-    selected: boxGroups.selected.length,
-    hovered: boxGroups.hovered.length,
-  });
-
   return (
     <group>
-      {/* Stored boxes */}
       {boxGroups.stored.length > 0 && (
         <instancedMesh
           ref={storedRef}
@@ -366,7 +310,6 @@ export default function InstancedInventoryBoxes() {
         </instancedMesh>
       )}
 
-      {/* Staged boxes */}
       {boxGroups.staged.length > 0 && (
         <instancedMesh
           ref={stagedRef}
@@ -379,7 +322,6 @@ export default function InstancedInventoryBoxes() {
         </instancedMesh>
       )}
 
-      {/* In-transit boxes */}
       {boxGroups.in_transit.length > 0 && (
         <instancedMesh
           ref={transitRef}
@@ -392,7 +334,6 @@ export default function InstancedInventoryBoxes() {
         </instancedMesh>
       )}
 
-      {/* Empty boxes */}
       {boxGroups.empty.length > 0 && (
         <instancedMesh
           ref={emptyRef}
@@ -405,7 +346,6 @@ export default function InstancedInventoryBoxes() {
         </instancedMesh>
       )}
 
-      {/* Selected box */}
       {boxGroups.selected.length > 0 && (
         <instancedMesh
           ref={selectedRef}
@@ -415,19 +355,6 @@ export default function InstancedInventoryBoxes() {
           frustumCulled={false}
         >
           <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.selected.length * 3), 3]} />
-        </instancedMesh>
-      )}
-
-      {/* Hovered box */}
-      {boxGroups.hovered.length > 0 && (
-        <instancedMesh
-          ref={hoveredRef}
-          args={[boxGeometry, materials.hovered, boxGroups.hovered.length]}
-          onClick={handleClick}
-          castShadow={useRealShadows}
-          frustumCulled={false}
-        >
-          <instancedBufferAttribute attach="instanceColor" args={[new Float32Array(boxGroups.hovered.length * 3), 3]} />
         </instancedMesh>
       )}
     </group>

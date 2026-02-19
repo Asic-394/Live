@@ -101,6 +101,21 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /**
+ * Get discrete color based on intensity thresholds (no interpolation)
+ */
+export function getDiscreteColor(colorScale: ColorScale, intensity: number): string {
+  const clampedIntensity = Math.max(0, Math.min(1, intensity));
+  
+  for (let i = colorScale.length - 1; i >= 0; i--) {
+    if (clampedIntensity >= colorScale[i].value) {
+      return colorScale[i].color;
+    }
+  }
+  
+  return colorScale[0].color;
+}
+
+/**
  * Get the color scale for a specific overlay type
  */
 export function getColorScaleForOverlay(overlayType: OverlayType): ColorScale {

@@ -40,12 +40,12 @@
       "id": "zone_congestion",
       "label": "Zone Congestion",
       "description": "Worker density across zones",
-      "unit": "density",
+      "unit": "workers",
       "overlayType": "heat_congestion",
       "thresholds": {
-        "critical": { "operator": "above", "value": 0.8 },
-        "watch": { "operator": "above", "value": 0.65 },
-        "normal": { "operator": "below", "value": 0.65 }
+        "critical": { "operator": "above", "value": 16 },
+        "watch": { "operator": "above", "value": 13 },
+        "normal": { "operator": "below", "value": 13 }
       }
     },
     {

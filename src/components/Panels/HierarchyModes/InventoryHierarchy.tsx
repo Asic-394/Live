@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../../state/store';
 import type { WarehouseLayoutElement } from '../../../types';
 
@@ -42,6 +42,7 @@ function TreeNode({
           isSelected ? 'bg-emerald-500/20 text-emerald-300' : 'text-gray-300'
         }`}
         style={{ paddingLeft: `${level * 1.25}rem` }}
+        data-selected={isSelected ? 'true' : undefined}
       >
         {hasChildren && (
           <button
@@ -101,6 +102,16 @@ export default function InventoryHierarchy() {
   const selectedBox = useStore((state) => state.selectedBox);
   
   const [searchQuery, setSearchQuery] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const selected = container.querySelector('[data-selected="true"]');
+    if (selected) {
+      selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedZone, selectedRack, selectedBox]);
 
   if (!warehouseLayout) return null;
 
@@ -164,7 +175,7 @@ export default function InventoryHierarchy() {
       </div>
 
       {/* Tree */}
-      <div className="max-h-[400px] overflow-y-auto space-y-1 px-2">
+      <div ref={scrollContainerRef} className="max-h-[400px] overflow-y-auto space-y-1 px-2">
         {filteredZones.map((zone) => {
           const zoneId = zone.element_id;
           const zoneAisles = aislesByZone[zoneId] || [];

@@ -12,25 +12,40 @@ interface ZoneKPICardProps {
   unit: string;
   intensity: number;
   zoneName: string;
+  delta?: number;
 }
 
-function ZoneKPICard({ zone, value, unit, intensity, zoneName }: ZoneKPICardProps) {
+function ZoneKPICard({ zone, value, unit, intensity, zoneName, delta }: ZoneKPICardProps) {
   const groupRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
   
   const position = useMemo(() => {
     const pos = CoordinateMapper.csvToThree(zone.x, zone.y, zone.z || 0);
-    // Position card elevated above racks - at the height of the zone + some offset
-    const cardY = (zone.height || 20) + 5; // Above the zone height
+    const cardY = (zone.height || 20) + 5;
     return [pos.x, cardY, pos.z] as [number, number, number];
   }, [zone.x, zone.y, zone.z, zone.height]);
 
-  // Scale based on distance from camera for better readability
+  const createRoundedRectShape = (width: number, height: number, radius: number) => {
+    const shape = new THREE.Shape();
+    const x = -width / 2;
+    const y = -height / 2;
+    
+    shape.moveTo(x + radius, y);
+    shape.lineTo(x + width - radius, y);
+    shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+    shape.lineTo(x + width, y + height - radius);
+    shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    shape.lineTo(x + radius, y + height);
+    shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+    shape.lineTo(x, y + radius);
+    shape.quadraticCurveTo(x, y, x + radius, y);
+    
+    return shape;
+  };
+
   useFrame(() => {
     if (groupRef.current) {
       const distance = camera.position.distanceTo(new THREE.Vector3(...position));
-      // Scale up when far away, scale down when close
-      // Min scale: 1.0, Max scale: 2.5
       const scale = Math.min(2.5, Math.max(1.0, distance / 100));
       groupRef.current.scale.setScalar(scale);
     }
@@ -49,12 +64,11 @@ function ZoneKPICard({ zone, value, unit, intensity, zoneName }: ZoneKPICardProp
       formattedValue = value.toFixed(1);
     }
 
-    // Format unit display
     let unitDisplay = '';
     if (unit === 'density') {
-      unitDisplay = ''; // No unit for density
+      unitDisplay = '';
     } else if (unit === 'orders/hr') {
-      unitDisplay = ' ord/hr'; // Shortened for space
+      unitDisplay = ' ord/hr';
     } else {
       unitDisplay = unit;
     }
@@ -62,34 +76,92 @@ function ZoneKPICard({ zone, value, unit, intensity, zoneName }: ZoneKPICardProp
     return { value: formattedValue, unit: unitDisplay };
   }, [value, unit]);
 
-  // Color scheme based on intensity
   const colors = useMemo(() => {
-    if (intensity < 0.4) {
+    if (intensity < 0.5) {
       return {
-        bg: '#10b981', // solid green background
-        bgOpacity: 0.9,
-        text: '#ffffff',
-        accent: '#065f46' // darker green for accent
+        bg: '#0a0f1a',
+        bgOpacity: 0.98,
+        border: '#10b981',
+        accent: '#059669',
+        value: '#d1fae5',
+        label: '#f1f5f9',
+        intensity: '#a7f3d0',
       };
     }
-    if (intensity < 0.7) {
+    if (intensity < 0.75) {
       return {
-        bg: '#f59e0b', // solid amber background
-        bgOpacity: 0.9,
-        text: '#ffffff',
-        accent: '#92400e' // darker amber for accent
+        bg: '#0a0f1a',
+        bgOpacity: 0.98,
+        border: '#f59e0b',
+        accent: '#d97706',
+        value: '#fef3c7',
+        label: '#f1f5f9',
+        intensity: '#fde68a',
       };
     }
     return {
-      bg: '#ef4444', // solid red background
-      bgOpacity: 0.9,
-      text: '#ffffff',
-      accent: '#991b1b' // darker red for accent
+      bg: '#0a0f1a',
+      bgOpacity: 0.98,
+      border: '#ef4444',
+      accent: '#dc2626',
+      value: '#fee2e2',
+      label: '#f1f5f9',
+      intensity: '#fecaca',
+    };
+  }, [intensity]);
+
+  const statusLabel = useMemo(() => {
+    if (intensity < 0.5) return 'SAFE';
+    if (intensity < 0.75) return 'WATCH';
+    return 'AT RISK';
+  }, [intensity]);
+
+  const statusColors = useMemo(() => {
+    if (intensity < 0.5) {
+      return {
+        bg: '#10b981',
+        text: '#000000',
+      };
+    }
+    if (intensity < 0.75) {
+      return {
+        bg: '#f59e0b',
+        text: '#000000',
+      };
+    }
+    return {
+      bg: '#ef4444',
+      text: '#000000',
     };
   }, [intensity]);
 
   const cardWidth = 18;
-  const cardHeight = 10;
+  const cardHeight = 9;
+  const cornerRadius = 1.5;
+  const strokeWidth = 0.4;
+
+  const createStatusBadgeShape = (width: number, height: number, radius: number) => {
+    const shape = new THREE.Shape();
+    const x = -width / 2;
+    const y = -height / 2;
+    
+    shape.moveTo(x + radius, y);
+    shape.lineTo(x + width - radius, y);
+    shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+    shape.lineTo(x + width, y + height - radius);
+    shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    shape.lineTo(x + radius, y + height);
+    shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+    shape.lineTo(x, y + radius);
+    shape.quadraticCurveTo(x, y, x + radius, y);
+    
+    return shape;
+  };
+
+  const cardShape = useMemo(() => createRoundedRectShape(cardWidth, cardHeight, cornerRadius), []);
+  const shadowShape = useMemo(() => createRoundedRectShape(cardWidth, cardHeight, cornerRadius), []);
+  const strokeShape = useMemo(() => createRoundedRectShape(cardWidth + strokeWidth, cardHeight + strokeWidth, cornerRadius), []);
+  const statusBadgeShape = useMemo(() => createStatusBadgeShape(9, 2.5, 0.5), []);
 
   return (
     <Billboard
@@ -100,90 +172,113 @@ function ZoneKPICard({ zone, value, unit, intensity, zoneName }: ZoneKPICardProp
       position={position}
     >
       <group ref={groupRef}>
-        {/* Main card background with status color */}
-        <mesh renderOrder={100}>
-          <planeGeometry args={[cardWidth, cardHeight]} />
+        <mesh position={[0.2, -0.2, -0.01]} renderOrder={9998}>
+          <shapeGeometry args={[shadowShape]} />
+          <meshBasicMaterial 
+            color="#000000"
+            transparent 
+            opacity={0.4}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            depthTest={false}
+          />
+        </mesh>
+
+        <mesh position={[0, 0, -0.001]} renderOrder={9999}>
+          <shapeGeometry args={[strokeShape]} />
+          <meshBasicMaterial 
+            color={colors.border}
+            transparent 
+            opacity={0.9}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            depthTest={false}
+          />
+        </mesh>
+
+        <mesh renderOrder={10000}>
+          <shapeGeometry args={[cardShape]} />
           <meshBasicMaterial 
             color={colors.bg}
             transparent 
             opacity={colors.bgOpacity}
             side={THREE.DoubleSide}
             depthWrite={false}
+            depthTest={false}
           />
         </mesh>
 
-        {/* Darker accent line at the left for depth */}
-        <mesh position={[-(cardWidth / 2 - 0.4), 0, 0.01]} renderOrder={101}>
-          <planeGeometry args={[0.8, cardHeight - 1]} />
-          <meshBasicMaterial 
-            color={colors.accent}
-            transparent 
-            opacity={0.8}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-          />
-        </mesh>
-
-        {/* Zone name label (top) */}
-        <Text
-          position={[0, cardHeight / 2 - 1.5, 0.02]}
-          fontSize={1.3}
-          color={colors.text}
-          anchorX="center"
-          anchorY="middle"
-          renderOrder={102}
-          maxWidth={cardWidth - 2}
-          outlineWidth={0.1}
-          outlineColor="#000000"
-        >
-          {zoneName}
-        </Text>
-
-        {/* Value (center, large) - split into value and unit */}
-        <Text
-          position={[0, 0, 0.02]}
-          fontSize={3.0}
-          color={colors.text}
-          anchorX="center"
-          anchorY="middle"
-          renderOrder={102}
-          outlineWidth={0.2}
-          outlineColor="#000000"
-          maxWidth={cardWidth - 2}
-        >
-          {displayText.value}
-        </Text>
-
-        {/* Unit label (smaller, next to value) */}
-        {displayText.unit && (
+        <group position={[0, 0.8, 0.03]}>
           <Text
-            position={[0, -1.5, 0.02]}
-            fontSize={1.5}
-            color={colors.text}
+            position={[displayText.unit || delta !== undefined ? -1 : 0, 0, 0]}
+            fontSize={4.5}
+            color={colors.value}
+            anchorX={displayText.unit || delta !== undefined ? "right" : "center"}
+            anchorY="middle"
+            renderOrder={10001}
+            fontWeight="bold"
+            depthTest={false}
+          >
+            {displayText.value}
+          </Text>
+          
+          {displayText.unit && (
+            <Text
+              position={[-0.5, 0, 0]}
+              fontSize={2.5}
+              color="#ffffff"
+              anchorX="left"
+              anchorY="middle"
+              renderOrder={10001}
+              letterSpacing={0.02}
+              depthTest={false}
+            >
+              {displayText.unit}
+            </Text>
+          )}
+
+          {delta !== undefined && (
+            <Text
+              position={[displayText.unit ? 2 : 0.5, 0, 0]}
+              fontSize={2}
+              color={delta > 0 ? '#10b981' : delta < 0 ? '#ef4444' : '#94a3b8'}
+              anchorX="left"
+              anchorY="middle"
+              renderOrder={10001}
+              letterSpacing={0.02}
+              depthTest={false}
+            >
+              {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)}
+            </Text>
+          )}
+        </group>
+
+        <group position={[0, -(cardHeight / 2 - 1.5), 0.03]}>
+          <mesh position={[0, 0, -0.01]} renderOrder={10000}>
+            <shapeGeometry args={[statusBadgeShape]} />
+            <meshBasicMaterial 
+              color={statusColors.bg}
+              transparent 
+              opacity={1}
+              side={THREE.DoubleSide}
+              depthWrite={false}
+              depthTest={false}
+            />
+          </mesh>
+
+          <Text
+            position={[0, 0, 0]}
+            fontSize={1.4}
+            color={statusColors.text}
             anchorX="center"
             anchorY="middle"
-            renderOrder={102}
-            maxWidth={cardWidth - 2}
-            outlineWidth={0.1}
-            outlineColor="#000000"
+            renderOrder={10001}
+            letterSpacing={0.05}
+            depthTest={false}
           >
-            {displayText.unit}
+            {statusLabel}
           </Text>
-        )}
-
-        {/* Intensity indicator (bottom, small) */}
-        <Text
-          position={[0, -(cardHeight / 2 - 1.3), 0.02]}
-          fontSize={1.1}
-          color={colors.text}
-          anchorX="center"
-          anchorY="middle"
-          renderOrder={102}
-          outlineWidth={0.1}
-          outlineColor="#000000"
-        >
-          {`${(intensity * 100).toFixed(0)}% intensity`}
-        </Text>
+        </group>
       </group>
     </Billboard>
   );
@@ -194,14 +289,12 @@ function ZoneKPIValuesComponent() {
   const activeOverlay = useStore((state) => state.activeOverlay);
   const selectedKPI = useStore((state) => state.selectedKPI);
   
-  // Get the heat data for the active overlay
   const heatData = useStore((state) => {
     if (!activeOverlay) return null;
     const data = state.overlayData.get(activeOverlay as OverlayType);
     return data || null;
   });
 
-  // Get the overlay config to determine the unit
   const overlayUnit = useMemo(() => {
     if (!activeOverlay) return '';
     
@@ -218,7 +311,6 @@ function ZoneKPIValuesComponent() {
   }, [activeOverlay]);
 
   const valueLabels = useMemo(() => {
-    // Only show values when a KPI is selected and overlay is active
     if (!selectedKPI || !activeOverlay || !warehouseLayout?.zones || !heatData || heatData.length === 0) {
       return [];
     }

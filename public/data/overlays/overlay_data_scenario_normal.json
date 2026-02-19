@@ -2,11 +2,11 @@
   "scenarioId": "scenario_normal",
   "overlays": {
     "heat_congestion": [
-      { "zoneId": "Zone-A", "intensity": 0.25, "value": 0.35 },
-      { "zoneId": "Zone-B1", "intensity": 0.50, "value": 0.60 },
-      { "zoneId": "Zone-B2", "intensity": 0.40, "value": 0.50 },
-      { "zoneId": "Zone-B3", "intensity": 0.35, "value": 0.45 },
-      { "zoneId": "Zone-D", "intensity": 0.20, "value": 0.28 }
+      { "zoneId": "Zone-A", "intensity": 0.25, "value": 7 },
+      { "zoneId": "Zone-B1", "intensity": 0.50, "value": 12 },
+      { "zoneId": "Zone-B2", "intensity": 0.40, "value": 10 },
+      { "zoneId": "Zone-B3", "intensity": 0.35, "value": 9 },
+      { "zoneId": "Zone-D", "intensity": 0.20, "value": 6 }
     ],
     "heat_utilization": [
       { "zoneId": "Zone-A", "intensity": 0.58, "value": 72 },

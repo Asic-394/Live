@@ -14,6 +14,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
   const setCameraMode = useStore((state) => state.setCameraMode);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
   const theme = useStore((state) => state.theme);
+  const leftSidebarCollapsed = useStore((state) => state.leftSidebarCollapsed);
   const [hoveredView, setHoveredView] = useState<string | null>(null);
   const [controlsReady, setControlsReady] = useState(false);
 
@@ -131,144 +132,156 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
     }
   };
 
-  // Failsafe: Always render the UI, even if controls aren't ready
-  // Use portal to render directly to body, bypassing any parent containers
+  // Separate the gizmo and controls into two containers
+  // Position gizmo 16px from top navigation (104px + 16px = 120px) 
+  // and 16px from left sidebar edge (48px or 400px + 16px)
+  const leftOffset = leftSidebarCollapsed ? 48 + 16 : 400 + 16; // 64px or 416px
+  
   const gizmoUI = (
-    <div 
-      className="fixed bottom-6 right-6 flex flex-col gap-3" 
-      style={{ 
-        zIndex: 99999,
-        isolation: 'isolate', 
-        pointerEvents: 'auto',
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px'
-      }}
-    >
-      {/* Main Gizmo Container */}
+    <>
+      {/* 3D Orientation Gizmo - Top Left of Canvas */}
       <div 
-        className="rounded-xl overflow-hidden shadow-2xl"
-        style={{
-          backgroundColor: theme === 'dark' ? '#16181f' : '#ffffff',
-          border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-          minWidth: '160px',
-          backdropFilter: 'blur(20px)'
+        className="transition-all duration-300"
+        style={{ 
+          position: 'fixed',
+          top: '120px', // 104px nav + 16px spacing
+          left: `${leftOffset}px`,
+          zIndex: 99999,
+          isolation: 'isolate', 
+          pointerEvents: 'auto'
         }}
       >
-        {/* 3D Orientation Cube */}
-        <div 
-          className="relative p-3 border-b"
-          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-        >
-          <OrientationCube controlsRef={controlsRef} />
-        </div>
+        <OrientationCube controlsRef={controlsRef} />
+      </div>
 
-        {/* View Presets */}
-        <div className="p-2">
-          <div className="flex flex-col gap-1.5">
-            <button
-              onClick={() => handleViewPreset('map')}
-              onMouseEnter={() => setHoveredView('map')}
-              onMouseLeave={() => setHoveredView(null)}
-              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
-              style={{
-                backgroundColor: hoveredView === 'map' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: hoveredView === 'map' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
-              }}
-            >
-              <span className="text-sm">🗺️</span>
-              <span>Map View</span>
-            </button>
-            
-            <button
-              onClick={() => handleViewPreset('birds-eye')}
-              onMouseEnter={() => setHoveredView('birds-eye')}
-              onMouseLeave={() => setHoveredView(null)}
-              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
-              style={{
-                backgroundColor: hoveredView === 'birds-eye' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: hoveredView === 'birds-eye' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
-              }}
-            >
-              <span className="text-sm">🦅</span>
-              <span>Birds Eye</span>
-            </button>
+      {/* View Controls - Bottom Right */}
+      <div 
+        className="fixed bottom-6 right-6 flex flex-col gap-3" 
+        style={{ 
+          zIndex: 99999,
+          isolation: 'isolate', 
+          pointerEvents: 'auto',
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px'
+        }}
+      >
+        <div 
+          className="rounded-xl overflow-hidden shadow-2xl"
+          style={{
+            backgroundColor: theme === 'dark' ? '#16181f' : '#ffffff',
+            border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+            minWidth: '160px',
+            backdropFilter: 'blur(20px)'
+          }}
+        >
+          {/* View Presets */}
+          <div className="p-2">
+            <div className="flex flex-col gap-1.5">
+              <button
+                onClick={() => handleViewPreset('map')}
+                onMouseEnter={() => setHoveredView('map')}
+                onMouseLeave={() => setHoveredView(null)}
+                className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: hoveredView === 'map' 
+                    ? '#3b82f6' 
+                    : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: hoveredView === 'map' 
+                    ? 'white' 
+                    : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
+                }}
+              >
+                <span className="text-sm">🗺️</span>
+                <span>Map View</span>
+              </button>
+              
+              <button
+                onClick={() => handleViewPreset('birds-eye')}
+                onMouseEnter={() => setHoveredView('birds-eye')}
+                onMouseLeave={() => setHoveredView(null)}
+                className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: hoveredView === 'birds-eye' 
+                    ? '#3b82f6' 
+                    : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: hoveredView === 'birds-eye' 
+                    ? 'white' 
+                    : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
+                }}
+              >
+                <span className="text-sm">🦅</span>
+                <span>Birds Eye</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Camera Mode Toggle */}
-        <div 
-          className="p-2 border-t"
-          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-        >
-          <div className="flex gap-1">
-            <button
-              onClick={() => handleCameraMode('orthographic')}
-              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
-              style={{
-                backgroundColor: cameraMode === 'orthographic' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: cameraMode === 'orthographic' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
-              }}
-              title="Orthographic projection"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
+          {/* Camera Mode Toggle */}
+          <div 
+            className="p-2 border-t"
+            style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
+          >
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleCameraMode('orthographic')}
+                className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'orthographic' 
+                    ? '#3b82f6' 
+                    : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: cameraMode === 'orthographic' 
+                    ? 'white' 
+                    : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
+                }}
+                title="Orthographic projection"
               >
-                <rect x="4" y="4" width="16" height="16" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="12" y1="4" x2="12" y2="20" />
-              </svg>
-              <span className="text-[10px] mt-1">Ortho</span>
-            </button>
-            
-            <button
-              onClick={() => handleCameraMode('perspective')}
-              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
-              style={{
-                backgroundColor: cameraMode === 'perspective' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: cameraMode === 'perspective' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
-              }}
-              title="Perspective projection"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <rect x="4" y="4" width="16" height="16" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="12" y1="4" x2="12" y2="20" />
+                </svg>
+                <span className="text-[10px] mt-1">Ortho</span>
+              </button>
+              
+              <button
+                onClick={() => handleCameraMode('perspective')}
+                className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'perspective' 
+                    ? '#3b82f6' 
+                    : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: cameraMode === 'perspective' 
+                    ? 'white' 
+                    : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
+                }}
+                title="Perspective projection"
               >
-                <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z" />
-                <line x1="12" y1="12" x2="21" y2="7" />
-                <line x1="12" y1="12" x2="3" y2="7" />
-              </svg>
-              <span className="text-[10px] mt-1">Persp</span>
-            </button>
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z" />
+                  <line x1="12" y1="12" x2="21" y2="7" />
+                  <line x1="12" y1="12" x2="3" y2="7" />
+                </svg>
+                <span className="text-[10px] mt-1">Persp</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 
   return createPortal(gizmoUI, document.body);
@@ -376,9 +389,6 @@ function OrientationCube({ controlsRef }: OrientationCubeProps) {
   return (
     <div 
       className="flex items-center justify-center rounded-lg"
-      style={{
-        backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
-      }}
     >
       <canvas
         ref={canvasRef}

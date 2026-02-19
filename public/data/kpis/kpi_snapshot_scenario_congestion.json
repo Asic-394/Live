@@ -5,7 +5,7 @@
     { "id": "throughput", "value": 38, "trend": -12 },
     { "id": "labor_utilization", "value": 82, "trend": 15 },
     { "id": "orders_at_risk", "value": 12, "trend": 8 },
-    { "id": "zone_congestion", "value": 0.82, "trend": 25 },
+    { "id": "zone_congestion", "value": 16, "trend": 25 },
     { "id": "on_time_delivery", "value": 86.2, "trend": -6 },
     { "id": "order_accuracy", "value": 97.1, "trend": -2 },
     { "id": "dock_utilization", "value": 88, "trend": 8 },
@@ -39,10 +39,10 @@
     },
     "zone_congestion": {
       "drivers": [
-        { "label": "Zone-B1 (Fast-Pick)", "value": 0.75, "contribution": 45, "zone": "Zone-B1" },
-        { "label": "Zone-B2 (Reserve)", "value": 0.62, "contribution": 30, "zone": "Zone-B2" },
-        { "label": "Zone-B3 (Bulk)", "value": 0.52, "contribution": 25, "zone": "Zone-B3" },
-        { "label": "Zone-A", "value": 0.38, "contribution": 18, "zone": "Zone-A" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 15, "contribution": 45, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 12, "contribution": 30, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 10, "contribution": 25, "zone": "Zone-B3" },
+        { "label": "Zone-A", "value": 8, "contribution": 18, "zone": "Zone-A" }
       ]
     }
   }

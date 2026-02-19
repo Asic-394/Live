@@ -11,15 +11,11 @@ interface ZoneLabelProps {
 function ZoneLabel({ zone }: ZoneLabelProps) {
   const { position, rotation } = useMemo(() => {
     const pos = CoordinateMapper.csvToThree(zone.x, zone.y, zone.z || 0);
-    // Position label at ground level, towards the front of the zone
-    // Front is negative Z direction (towards camera in typical view)
-    const labelY = 0.15; // Slightly above ground to prevent z-fighting
-    const frontOffset = (zone.depth / 2) - 3; // Near front edge, with 3 unit padding
+    const labelY = 0.15;
+    const frontOffset = (zone.depth / 2) - 3;
     
     const labelPos = [pos.x, labelY, pos.z + frontOffset] as [number, number, number];
     
-    // Rotate to be flat on the ground (facing up)
-    // Rotation order: x, y, z (in radians)
     const zoneRotRad = ((zone.rotation || 0) * Math.PI) / 180;
     const labelRot = [-Math.PI / 2, 0, zoneRotRad] as [number, number, number];
     

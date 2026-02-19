@@ -1,10 +1,26 @@
 import React from 'react';
 import { useStore } from '../../state/store';
+import { COLOR_SCALES } from '../../utils/heatmapMaterials';
+
+// Helper function to format KPI values based on unit
+function formatKPIValue(value: number, unit: string): string {
+  if (unit === 'orders' || unit === 'orders/hr') {
+    return Math.round(value).toString();
+  } else if (unit === 'workers') {
+    return Math.round(value).toString();
+  } else if (unit === '%') {
+    return value.toFixed(1) + '%';
+  } else if (unit === 'sec') {
+    return Math.round(value) + 's';
+  }
+  return value.toFixed(1);
+}
 
 export default function DrillDownPanel() {
   const drillDownData = useStore((state) => state.drillDownData);
   const selectedKPI = useStore((state) => state.selectedKPI);
   const kpis = useStore((state) => state.kpis);
+  const activeOverlay = useStore((state) => state.activeOverlay);
   const focusOnZone = useStore((state) => state.focusOnZone);
   const selectKPI = useStore((state) => state.selectKPI);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -29,7 +45,7 @@ export default function DrillDownPanel() {
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="absolute top-28 right-6 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
+        className="fixed top-[120px] right-4 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
         title={`Expand ${kpi.label}`}
       >
         <div className="flex items-center gap-2">
@@ -43,8 +59,8 @@ export default function DrillDownPanel() {
   }
 
   return (
-    <div className="absolute top-28 right-6 z-10 w-80 
-                    max-h-[calc(100vh-14rem)] overflow-y-auto
+    <div className="fixed top-[120px] right-4 z-10 w-80 
+                    max-h-[calc(100vh-136px)] overflow-y-auto
                     glass-panel rounded-xl 
                     p-6 animate-slide-in">
       {/* Header */}
@@ -86,6 +102,47 @@ export default function DrillDownPanel() {
         </div>
       </div>
 
+      {/* Heat Map Legend */}
+      {activeOverlay && COLOR_SCALES[activeOverlay] && (
+        <div className="mb-6 pb-6 border-b border-white/5">
+          <h4 className="text-sm font-medium text-gray-300 mb-4">
+            Heat Map Legend
+          </h4>
+          
+          {/* Discrete Color Blocks */}
+          <div className="flex rounded-lg overflow-hidden shadow-inner border border-white/10 mb-2">
+            {COLOR_SCALES[activeOverlay].map((stop, index) => (
+              <div 
+                key={index}
+                className="flex-1 h-8"
+                style={{ backgroundColor: stop.color }}
+              />
+            ))}
+          </div>
+
+          {/* Range Labels */}
+          <div className="flex justify-between text-xs text-gray-400 px-1">
+            {COLOR_SCALES[activeOverlay].map((stop, index, array) => {
+              const prevValue = index > 0 ? array[index - 1].value : 0;
+              const currentValue = stop.value;
+              const isLast = index === array.length - 1;
+              
+              return (
+                <div key={index} className="flex-1 text-center">
+                  {index === 0 ? (
+                    <span>{(prevValue * 100).toFixed(0)}%-{(currentValue * 100).toFixed(0)}%</span>
+                  ) : isLast ? (
+                    <span>{(prevValue * 100).toFixed(0)}%-{(currentValue * 100).toFixed(0)}%</span>
+                  ) : (
+                    <span>{(prevValue * 100).toFixed(0)}%-{(currentValue * 100).toFixed(0)}%</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Top Contributors */}
       <div>
         <h4 className="text-sm font-medium text-gray-300 mb-4">
@@ -118,7 +175,7 @@ export default function DrillDownPanel() {
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-400">
-                  Value: {typeof driver.value === 'number' ? driver.value.toFixed(1) : driver.value}
+                  Value: {formatKPIValue(driver.value, kpi.unit)}
                 </span>
                 <button
                   onClick={() => handleViewOnMap(driver.zone)}

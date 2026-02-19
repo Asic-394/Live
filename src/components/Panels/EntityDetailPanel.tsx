@@ -56,7 +56,7 @@ function BoxDetailView({
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="absolute top-28 right-6 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
+        className="fixed top-[120px] right-4 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
         title={`Expand ${box.box_id}`}
       >
         <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ function BoxDetailView({
   }
 
   return (
-    <div className="absolute top-28 right-6 w-96 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-8rem)] overflow-y-auto animate-fade-in">
+    <div className="fixed top-[120px] right-4 w-96 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-136px)] overflow-y-auto animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -243,7 +243,7 @@ function RackDetailView({
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="absolute top-28 right-6 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
+        className="fixed top-[120px] right-4 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
         title={`Expand ${rack.element_id}`}
       >
         <div className="flex items-center gap-2">
@@ -257,7 +257,7 @@ function RackDetailView({
   }
 
   return (
-    <div className="absolute top-28 right-6 w-80 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-8rem)] overflow-y-auto animate-fade-in">
+    <div className="fixed top-[120px] right-4 w-80 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-136px)] overflow-y-auto animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -462,7 +462,7 @@ export default function EntityDetailPanel() {
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="absolute top-28 right-6 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
+        className="fixed top-[120px] right-4 z-10 glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
         title={`Expand ${entity.entity_id}`}
       >
         <div className="flex items-center gap-2">
@@ -476,7 +476,7 @@ export default function EntityDetailPanel() {
   }
 
   return (
-    <div className="absolute top-28 right-6 w-80 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-8rem)] overflow-y-auto animate-fade-in">
+    <div className="fixed top-[120px] right-4 w-80 glass-panel rounded-xl p-6 z-10 text-gray-100 max-h-[calc(100vh-136px)] overflow-y-auto animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>

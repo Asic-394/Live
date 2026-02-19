@@ -70,6 +70,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Scene state
   selectedEntity: null,
+  selectedZone: null,
   selectedRack: null,
   selectedBox: null,
   cameraReset: 0,
@@ -93,6 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
   drillDownData: null,
   highlightedZones: new Set(),
   focusedZone: null,
+  focusedElementType: null as 'zone' | 'aisle' | 'rack' | null,
 
   // Ticker configuration
   tickerKPIs: getInitialTickerConfig(),
@@ -124,6 +126,7 @@ export const useStore = create<AppState>((set, get) => ({
         loadingState: 'success',
         error: null,
         selectedEntity: null,
+        selectedZone: null,
         selectedRack: null,
         selectedBox: null,
         cameraReset: get().cameraReset + 1, // Trigger camera reset
@@ -157,7 +160,9 @@ export const useStore = create<AppState>((set, get) => ({
     const currentDataset = get().currentDataset;
     set({
       selectedEntity: null,
+      selectedZone: null,
       selectedRack: null,
+      selectedBox: null,
       cameraReset: get().cameraReset + 1,
     });
 
@@ -171,13 +176,16 @@ export const useStore = create<AppState>((set, get) => ({
     set({ selectedEntity: entityId });
   },
 
+  selectZone: (zoneId: string | null) => {
+    set({ selectedZone: zoneId, selectedRack: null, selectedBox: null });
+  },
+
   selectRack: (rackId: string | null) => {
-    set({ selectedRack: rackId });
+    set({ selectedRack: rackId, selectedBox: null });
   },
 
   selectBox: (boxId: string | null) => {
     set({ selectedBox: boxId });
-
     // If selecting a box, also find and select its parent rack
     if (boxId) {
       const box = get().boxes.find(b => b.box_id === boxId);
@@ -285,7 +293,8 @@ export const useStore = create<AppState>((set, get) => ({
         activeOverlay: null,
         drillDownData: null,
         highlightedZones: new Set(),
-        focusedZone: null
+        focusedZone: null,
+        focusedElementType: null
       });
       return;
     }
@@ -297,7 +306,8 @@ export const useStore = create<AppState>((set, get) => ({
         activeOverlay: null,
         drillDownData: null,
         highlightedZones: new Set(),
-        focusedZone: null
+        focusedZone: null,
+        focusedElementType: null
       });
       return;
     }
@@ -344,7 +354,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   focusOnZone: (zoneId: string, _smooth: boolean = true) => {
-    set({ focusedZone: zoneId });
+    set({ focusedZone: zoneId, focusedElementType: 'zone' });
+  },
+
+  focusOnElement: (elementId: string, elementType: 'zone' | 'aisle' | 'rack', _smooth: boolean = true) => {
+    set({ focusedZone: elementId, focusedElementType: elementType });
   },
 
   clearMonitoringState: () => {
@@ -353,7 +367,8 @@ export const useStore = create<AppState>((set, get) => ({
       activeOverlay: null,
       drillDownData: null,
       highlightedZones: new Set(),
-      focusedZone: null
+      focusedZone: null,
+      focusedElementType: null
     });
   },
 

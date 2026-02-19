@@ -223,7 +223,7 @@ function generateInventory(scenarioId: string, racks: WarehouseLayoutElement[]):
     const zoneMultiplier = config.zoneDistribution[zoneId] || 1.0;
     const zoneOccupancy = config.occupancyRate * zoneMultiplier;
 
-    const levels = rack.metadata?.levels || 7;
+    const levels = rack.metadata?.levels || 3;
     const slotsPerLevel = 3; // 3 slots per level for efficient space usage
 
     for (let level = 1; level <= levels; level++) {
@@ -249,7 +249,7 @@ function generateInventory(scenarioId: string, racks: WarehouseLayoutElement[]):
 }
 
 function createBox(boxId: string, rack: WarehouseLayoutElement, level: number, position: number): any {
-  const levelHeight = (rack.height || 20) / 7;
+  const levelHeight = (rack.height || 20) / 3;
   const z = (rack.z || 0) + levelHeight * (level - 0.5);
   const positionOffset = (position - 2) * 1.5;
   const x = rack.x + positionOffset;

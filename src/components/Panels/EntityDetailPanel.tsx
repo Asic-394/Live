@@ -431,6 +431,7 @@ export default function EntityDetailPanel() {
   const boxes = useStore((state) => state.boxes);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
   const selectEntity = useStore((state) => state.selectEntity);
+  const selectZone = useStore((state) => state.selectZone);
   const selectRack = useStore((state) => state.selectRack);
   const selectBox = useStore((state) => state.selectBox);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -439,7 +440,7 @@ export default function EntityDetailPanel() {
   if (selectedBox) {
     const box = boxes.find((b) => b.box_id === selectedBox);
     if (box) {
-      return <BoxDetailView box={box} onClose={() => selectBox(null)} />;
+      return <BoxDetailView box={box} onClose={() => selectZone(null)} />;
     }
   }
 
@@ -448,7 +449,7 @@ export default function EntityDetailPanel() {
     const rack = warehouseLayout.racks.find((r) => r.element_id === selectedRack);
     if (rack) {
       const inventory = getInventoryForRack(selectedRack, entities, rack);
-      return <RackDetailView rack={rack} inventory={inventory} selectEntity={selectEntity} onClose={() => selectRack(null)} />;
+      return <RackDetailView rack={rack} inventory={inventory} selectEntity={selectEntity} onClose={() => selectZone(null)} />;
     }
   }
 

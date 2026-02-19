@@ -92,9 +92,11 @@ export default function InventoryHierarchy() {
   const boxes = useStore((state) => state.boxes);
   const hierarchyExpanded = useStore((state) => state.hierarchyExpanded);
   const toggleHierarchyNode = useStore((state) => state.toggleHierarchyNode);
+  const selectZone = useStore((state) => state.selectZone);
   const selectRack = useStore((state) => state.selectRack);
   const selectBox = useStore((state) => state.selectBox);
-  const focusOnZone = useStore((state) => state.focusOnZone);
+  const focusOnElement = useStore((state) => state.focusOnElement);
+  const selectedZone = useStore((state) => state.selectedZone);
   const selectedRack = useStore((state) => state.selectedRack);
   const selectedBox = useStore((state) => state.selectedBox);
   
@@ -106,6 +108,13 @@ export default function InventoryHierarchy() {
   const zones = warehouseLayout.zones;
   const aisles = warehouseLayout.aisles;
   const racks = warehouseLayout.racks;
+
+  // Helper function to extract zone letter and format label
+  const getZoneLabel = (zone: WarehouseLayoutElement): string => {
+    const zoneLetter = zone.element_id.split('-')[1] || '';
+    const zoneName = zone.name || zone.element_id;
+    return zoneLetter ? `Zone ${zoneLetter} - ${zoneName}` : zoneName;
+  };
 
   // Group aisles by zone
   const aislesByZone = aisles.reduce((acc, aisle) => {
@@ -165,14 +174,17 @@ export default function InventoryHierarchy() {
             <TreeNode
               key={zoneId}
               id={zoneId}
-              label={zone.name || zoneId}
+              label={getZoneLabel(zone)}
               type="zone"
               level={0}
               isExpanded={isZoneExpanded}
               hasChildren={zoneAisles.length > 0}
               onToggle={() => toggleHierarchyNode(zoneId)}
-              onSelect={() => focusOnZone(zoneId, true)}
-              isSelected={false}
+              onSelect={() => {
+                selectZone(zoneId);
+                focusOnElement(zoneId, 'zone', true);
+              }}
+              isSelected={selectedZone === zoneId}
             >
               {zoneAisles.map((aisle) => {
                 const aisleId = aisle.element_id;
@@ -189,7 +201,7 @@ export default function InventoryHierarchy() {
                     isExpanded={isAisleExpanded}
                     hasChildren={aisleRacks.length > 0}
                     onToggle={() => toggleHierarchyNode(aisleId)}
-                    onSelect={() => focusOnZone(aisleId, true)}
+                    onSelect={() => focusOnElement(aisleId, 'aisle', true)}
                     isSelected={false}
                   >
                     {aisleRacks.map((rack) => {
@@ -199,7 +211,7 @@ export default function InventoryHierarchy() {
                       
                       // Calculate occupancy
                       const totalBoxes = rackBoxes.length;
-                      const levels = rack.metadata?.levels || 7;
+                      const levels = rack.metadata?.levels || 3;
                       const occupancyPercent = Math.round((totalBoxes / (levels * 4)) * 100);
 
                       return (
@@ -213,8 +225,13 @@ export default function InventoryHierarchy() {
                           hasChildren={rackBoxes.length > 0}
                           onToggle={() => toggleHierarchyNode(rackId)}
                           onSelect={() => {
+                            const aisleId = rack.hierarchy?.parent_id;
+                            const aisle = aisles.find((a) => a.element_id === aisleId);
+                            const zoneIdForRack = aisle?.hierarchy?.parent_id ?? null;
+                            if (zoneIdForRack) selectZone(zoneIdForRack);
                             selectRack(rackId);
                             selectBox(null);
+                            focusOnElement(rackId, 'rack', true);
                           }}
                           isSelected={selectedRack === rackId && !selectedBox}
                           metadata={`${totalBoxes} boxes (${occupancyPercent}%)`}
@@ -235,7 +252,15 @@ export default function InventoryHierarchy() {
                                 isExpanded={false}
                                 hasChildren={false}
                                 onToggle={() => {}}
-                                onSelect={() => selectBox(box.box_id)}
+                                onSelect={() => {
+                                  const rackEl = racks.find((r) => r.element_id === box.rack_id);
+                                  const aisleId = rackEl?.hierarchy?.parent_id;
+                                  const aisle = aisleId ? aisles.find((a) => a.element_id === aisleId) : null;
+                                  const zoneIdForRack = aisle?.hierarchy?.parent_id ?? null;
+                                  if (zoneIdForRack) selectZone(zoneIdForRack);
+                                  selectBox(box.box_id);
+                                  focusOnElement(box.rack_id, 'rack', true);
+                                }}
                                 isSelected={selectedBox === box.box_id}
                                 metadata={
                                   <span className={capacityColor}>

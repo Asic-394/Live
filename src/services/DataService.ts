@@ -74,6 +74,26 @@ export class DataService {
       metadata: CSVParser.parseJSONField(row.metadata, {}),
     }));
 
+    // Check for duplicate element IDs
+    const elementIdCounts = new Map<string, number>();
+    const duplicates: string[] = [];
+    elements.forEach(el => {
+      const count = (elementIdCounts.get(el.element_id) || 0) + 1;
+      elementIdCounts.set(el.element_id, count);
+      if (count === 2) {
+        duplicates.push(el.element_id);
+      }
+    });
+    
+    if (duplicates.length > 0) {
+      console.error('❌ DUPLICATE ELEMENT IDs FOUND:', duplicates);
+      console.error('This will cause incorrect zoom behavior and React key warnings!');
+      duplicates.forEach(dupId => {
+        const dups = elements.filter(el => el.element_id === dupId);
+        console.error(`  "${dupId}" appears ${dups.length} times:`, dups.map(d => ({ type: d.element_type, name: d.name, x: d.x, y: d.y })));
+      });
+    }
+
     // Separate by type
     const zones = elements.filter((el) => el.element_type === 'zone');
     const aisles = elements.filter((el) => el.element_type === 'aisle');

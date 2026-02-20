@@ -39,9 +39,9 @@ export default function KPITickerItem({ kpi, onClick }: KPITickerItemProps) {
   return (
     <div 
       className="flex items-center gap-2 px-3 py-1.5 rounded-lg 
-                 bg-white/5 hover:bg-white/10 cursor-pointer
+                 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer
                  transition-all duration-200 whitespace-nowrap
-                 border border-white/5 hover:border-white/10"
+                 border border-black/8 dark:border-white/5 hover:border-black/15 dark:hover:border-white/10"
       onClick={() => onClick(kpi)}
       title={kpi.description || label}
     >
@@ -51,7 +51,7 @@ export default function KPITickerItem({ kpi, onClick }: KPITickerItemProps) {
       />
       
       {/* Label */}
-      <span className="text-xs text-gray-400 font-medium">
+      <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
         {label}:
       </span>
       

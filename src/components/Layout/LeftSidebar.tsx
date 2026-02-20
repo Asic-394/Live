@@ -47,7 +47,7 @@ export default function LeftSidebar() {
           {/* Expand button */}
           <button
             onClick={toggleLeftSidebar}
-            className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all group"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all group"
             title="Expand Sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,7 @@ export default function LeftSidebar() {
                 toggleLeftSidebar();
                 if (!healthSectionExpanded) toggleHealthSection();
               }}
-              className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all"
               title="Warehouse Health"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,7 +75,7 @@ export default function LeftSidebar() {
                 toggleLeftSidebar();
                 if (!hierarchySectionExpanded) toggleHierarchySection();
               }}
-              className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all"
               title="Hierarchy"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +88,7 @@ export default function LeftSidebar() {
                 toggleLeftSidebar();
                 if (!filterSectionExpanded) toggleFilterSection();
               }}
-              className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all"
               title="Filters"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,11 +106,11 @@ export default function LeftSidebar() {
       {/* Expanded sidebar */}
       <div className="glass-panel rounded-r-xl h-full w-[400px] flex flex-col overflow-hidden shadow-2xl">
         {/* Header with collapse button */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-100">Warehouse Control</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/10 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Warehouse Control</h2>
           <button
             onClick={toggleLeftSidebar}
-            className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-gray-200 transition-all"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all"
             title="Collapse Sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,19 +122,19 @@ export default function LeftSidebar() {
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {/* Warehouse Health Section */}
-          <div className="border-b border-white/10">
+          <div className="border-b border-gray-200 dark:border-white/10">
             <button
               onClick={toggleHealthSection}
-              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <h3 className="text-sm font-semibold text-emerald-400">Warehouse Health</h3>
+                <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Warehouse Health</h3>
               </div>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform ${healthSectionExpanded ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${healthSectionExpanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -150,19 +150,19 @@ export default function LeftSidebar() {
           </div>
 
           {/* Hierarchy Section */}
-          <div className="border-b border-white/10">
+          <div className="border-b border-gray-200 dark:border-white/10">
             <button
               onClick={toggleHierarchySection}
-              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                <h3 className="text-sm font-semibold text-blue-400">{getHierarchyTitle()}</h3>
+                <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400">{getHierarchyTitle()}</h3>
               </div>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform ${hierarchySectionExpanded ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${hierarchySectionExpanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -181,16 +181,16 @@ export default function LeftSidebar() {
           <div>
             <button
               onClick={toggleFilterSection}
-              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <h3 className="text-sm font-semibold text-purple-400">Entity Filters</h3>
+                <h3 className="text-sm font-semibold text-purple-600 dark:text-purple-400">Entity Filters</h3>
               </div>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform ${filterSectionExpanded ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${filterSectionExpanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

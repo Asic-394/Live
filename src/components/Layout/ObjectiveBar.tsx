@@ -53,11 +53,11 @@ export default function ObjectiveBar() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-20 h-12 glass-panel border-b border-white/5">
+    <div className="fixed top-0 left-0 right-0 z-20 h-12 glass-panel border-b border-gray-200 dark:border-white/5">
       <div className="flex items-center justify-between h-full px-4 gap-4">
         {/* Left: Blue Yonder Logo */}
         <div className="flex-shrink-0 flex items-center">
-          <BlueYonderLogo className="h-6 text-gray-300" />
+          <BlueYonderLogo className="h-6 text-gray-600 dark:text-gray-300" />
         </div>
         
         {/* Center: KPI Ticker */}
@@ -68,12 +68,12 @@ export default function ObjectiveBar() {
         {/* Right: Notification and Profile Icons */}
         <div className="flex-shrink-0 flex items-center gap-1">
           <NotificationIcon 
-            className="text-gray-400 hover:text-gray-200"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             count={0}
             onClick={handleNotificationClick}
           />
           <ProfileIcon 
-            className="text-gray-400 hover:text-gray-200"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             onClick={handleProfileClick}
           />
         </div>

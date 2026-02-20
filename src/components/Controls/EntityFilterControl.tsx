@@ -26,7 +26,6 @@ export default function EntityFilterControl() {
   const [inventorySearch, setInventorySearch] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
 
-  // Count entities by type
   const entityCounts = entities.reduce((acc, entity) => {
     acc[entity.entity_type] = (acc[entity.entity_type] || 0) + 1;
     return acc;
@@ -34,10 +33,8 @@ export default function EntityFilterControl() {
 
   const handleToggleAll = () => {
     if (visibleEntityTypes.size === entityTypes.length) {
-      // If all are visible, hide all
       setVisibleEntityTypes(new Set());
     } else {
-      // Otherwise, show all
       setVisibleEntityTypes(new Set(entityTypes.map(et => et.type)));
     }
   };
@@ -45,7 +42,6 @@ export default function EntityFilterControl() {
   const allVisible = visibleEntityTypes.size === entityTypes.length;
   const noneVisible = visibleEntityTypes.size === 0;
 
-  // Handle inventory search
   const handleInventorySearch = (query: string) => {
     setInventorySearch(query);
     if (query.trim()) {
@@ -64,13 +60,12 @@ export default function EntityFilterControl() {
 
   return (
     <div className="w-full">
-      {/* Header - removed, now in parent sidebar */}
       <div className="flex items-center justify-between mb-3 px-2">
         <button
           onClick={handleToggleAll}
-          className="text-xs px-3 py-1.5 rounded-lg bg-white/5 
-                     text-gray-400 hover:bg-white/10 hover:text-gray-200
-                     transition-all border border-white/5"
+          className="text-xs px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 
+                     text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200
+                     transition-all border border-black/8 dark:border-white/5"
         >
           {allVisible ? 'Hide All' : 'Show All'}
         </button>
@@ -86,10 +81,10 @@ export default function EntityFilterControl() {
             <label
               key={type}
               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all
-                border border-white/5
+                border
                 ${isVisible 
-                  ? 'bg-white/5 hover:bg-white/10 border-white/10' 
-                  : 'hover:bg-white/5'
+                  ? 'bg-black/5 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 border-gray-200 dark:border-white/10' 
+                  : 'border-transparent hover:bg-gray-50 dark:hover:bg-white/5'
                 }`}
             >
               {/* Checkbox */}
@@ -98,7 +93,7 @@ export default function EntityFilterControl() {
                 checked={isVisible}
                 onChange={() => toggleEntityType(type)}
                 className="w-4 h-4 text-blue-400 
-                           bg-white/5 border-white/10 
+                           bg-black/5 dark:bg-white/5 border-gray-300 dark:border-white/10 
                            rounded focus:ring-2 
                            focus:ring-blue-400/50 cursor-pointer"
               />
@@ -111,15 +106,15 @@ export default function EntityFilterControl() {
               <div className="flex-1 flex items-center justify-between">
                 <span className={`text-sm ${
                   isVisible 
-                    ? 'text-gray-100 font-medium' 
-                    : 'text-gray-400'
+                    ? 'text-gray-900 dark:text-gray-100 font-medium' 
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   {label}
                 </span>
                 <span className={`text-xs px-2 py-1 rounded-md ${
                   isVisible
-                    ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30'
-                    : 'bg-white/5 text-gray-500'
+                    ? 'bg-blue-400/20 text-blue-700 dark:text-blue-300 border border-blue-400/30'
+                    : 'bg-black/5 dark:bg-white/5 text-gray-500'
                 }`}>
                   {count}
                 </span>
@@ -130,8 +125,8 @@ export default function EntityFilterControl() {
       </div>
 
       {/* Inventory Search */}
-      <div className="mt-4 pt-4 border-t border-white/5 px-2">
-        <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/5 px-2">
+        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
           Search Inventory
         </h4>
         <div className="relative">
@@ -140,7 +135,7 @@ export default function EntityFilterControl() {
             value={inventorySearch}
             onChange={(e) => handleInventorySearch(e.target.value)}
             placeholder="SKU, product name, box ID..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
+            className="w-full bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
           />
           {inventorySearch && (
             <button
@@ -148,7 +143,7 @@ export default function EntityFilterControl() {
                 setInventorySearch('');
                 setSearchResults([]);
               }}
-              className="absolute right-2 top-2 text-gray-400 hover:text-gray-200"
+              className="absolute right-2 top-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -159,19 +154,19 @@ export default function EntityFilterControl() {
         
         {/* Search Results */}
         {searchResults.length > 0 && (
-          <div className="mt-2 max-h-48 overflow-y-auto bg-white/5 rounded-lg border border-white/10">
+          <div className="mt-2 max-h-48 overflow-y-auto bg-black/5 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
             {searchResults.slice(0, 10).map((box) => (
               <button
                 key={box.box_id}
                 onClick={() => handleSelectSearchResult(box.box_id)}
-                className="w-full text-left px-3 py-2 hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0"
+                className="w-full text-left px-3 py-2 hover:bg-black/8 dark:hover:bg-white/10 transition-colors border-b border-gray-200 dark:border-white/5 last:border-b-0"
               >
-                <div className="text-xs text-emerald-400 font-mono mb-1">{box.box_id}</div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-mono mb-1">{box.box_id}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {box.rack_id} • Level {box.level} • {box.items.length} items
                 </div>
                 {box.items.length > 0 && (
-                  <div className="text-xs text-gray-500 mt-1 truncate">
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
                     {box.items.map((item: any) => item.product_name).join(', ')}
                   </div>
                 )}
@@ -194,9 +189,9 @@ export default function EntityFilterControl() {
 
       {/* Warning when all hidden */}
       {noneVisible && (
-        <div className="mt-4 pt-3 border-t border-white/5 px-2">
-          <p className="text-xs text-amber-400/80 flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-amber-400"></span>
+        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/5 px-2">
+          <p className="text-xs text-amber-600 dark:text-amber-400/80 flex items-center gap-2">
+            <span className="w-1 h-1 rounded-full bg-amber-500 dark:bg-amber-400"></span>
             All entity types are hidden
           </p>
         </div>

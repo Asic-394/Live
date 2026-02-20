@@ -11,10 +11,10 @@ export default function HierarchyPanel() {
   // Don't show hierarchy if no lens is selected
   if (activeLenses.size === 0) {
     return (
-      <div className="w-full text-gray-100 flex flex-col items-center justify-center py-12 px-4">
+      <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center py-12 px-4">
         <div className="text-center">
           <div className="text-4xl mb-4">🔍</div>
-          <div className="text-sm font-medium text-gray-300 mb-2">Select a lens to view context-specific hierarchy</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select a lens to view context-specific hierarchy</div>
           <div className="text-xs text-gray-500">
             Choose Inventory, Resources, Tasks, or Alerts from the navigation bar above
           </div>
@@ -29,7 +29,7 @@ export default function HierarchyPanel() {
 
   if (!lens) {
     return (
-      <div className="w-full text-gray-100 flex flex-col items-center justify-center py-8 px-4">
+      <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center py-8 px-4">
         <div className="text-xs text-gray-500">Unknown lens type</div>
       </div>
     );
@@ -50,7 +50,7 @@ export default function HierarchyPanel() {
     case 'outbound':
     case 'yard':
       return (
-        <div className="w-full text-gray-100 flex flex-col items-center justify-center py-8 px-4">
+        <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center py-8 px-4">
           <div className="text-xs text-gray-500 text-center">
             {lens.label} hierarchy coming soon in Phase 2
           </div>
@@ -58,7 +58,7 @@ export default function HierarchyPanel() {
       );
     default:
       return (
-        <div className="w-full text-gray-100 flex flex-col items-center justify-center py-8 px-4">
+        <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center py-8 px-4">
           <div className="text-xs text-gray-500">No hierarchy available for this lens</div>
         </div>
       );

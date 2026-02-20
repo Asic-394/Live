@@ -55,10 +55,10 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false, isLoading = 
     <div
       className={`
         kpi-card relative overflow-hidden
-        bg-[#16181f]/95 backdrop-blur-xl rounded-lg p-3.5 shadow-xl shadow-black/20
-        border border-l-4 border-white/5 ${statusBorderColors[status]}
+        bg-white/90 dark:bg-[#16181f]/95 backdrop-blur-xl rounded-lg p-3.5 shadow-xl shadow-black/10 dark:shadow-black/20
+        border border-l-4 border-gray-200 dark:border-white/5 ${statusBorderColors[status]}
         transition-all duration-300 cursor-pointer
-        hover:bg-[#1c1f27] hover:shadow-black/30 hover:border-white/10
+        hover:bg-gray-50 dark:hover:bg-[#1c1f27] hover:shadow-black/20 dark:hover:shadow-black/30 hover:border-gray-300 dark:hover:border-white/10
         ${isSelected ? 'ring-2 ring-blue-400/50 border-blue-400/30' : ''}
         ${isPrioritized ? 'ring-1 ring-blue-400/30 border-blue-400/20' : ''}
         ${status === 'Critical' ? 'animate-subtle-pulse' : ''}
@@ -84,10 +84,10 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false, isLoading = 
       </div>
 
       {/* Label */}
-      <div className="text-xs font-medium text-gray-400 mb-2 pr-16 flex items-center gap-1.5">
+      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 pr-16 flex items-center gap-1.5">
         {label}
         {isPrioritized && (
-          <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+          <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-400/30">
             Relevant
           </span>
         )}
@@ -95,10 +95,10 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false, isLoading = 
 
       {/* Value and unit */}
       <div className="flex items-baseline gap-1.5 mb-1">
-        <span className="text-2xl font-semibold text-gray-100">
+        <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           {typeof value === 'number' ? value.toFixed(unit === '%' || unit === 'density' ? 1 : 0) : value}
         </span>
-        <span className="text-sm text-gray-400">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
           {unit}
         </span>
       </div>
@@ -113,9 +113,8 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false, isLoading = 
 
       {/* Hover hint */}
       {kpi.overlayType && !isLoading && (
-        <div className="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50"></span>
-          Click to analyze heatmap
+        <div className="mt-2 text-[10px] text-gray-400 dark:text-gray-500">
+          Click to view on map
         </div>
       )}
     </div>
@@ -233,9 +232,9 @@ export default function KPIPanel() {
         <div className="mb-3 px-2">
           <button
             onClick={() => selectKPI(null)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-white/5 
-                     text-gray-400 hover:bg-white/10 hover:text-gray-200
-                     transition-all border border-white/5"
+            className="text-xs px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 
+                     text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200
+                     transition-all border border-black/8 dark:border-white/5"
             title="Clear selection"
           >
             Clear Selection
@@ -269,9 +268,9 @@ export default function KPIPanel() {
         <div className="mt-3 px-2">
           <button
             onClick={() => setShowAllKPIs(!showAllKPIs)}
-            className="w-full text-xs px-3 py-2 rounded-lg bg-white/5 
-                     text-gray-400 hover:bg-white/10 hover:text-gray-200
-                     transition-all border border-white/5 hover:border-white/10
+            className="w-full text-xs px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 
+                     text-gray-600 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-gray-200
+                     transition-all border border-black/8 dark:border-white/5 hover:border-black/15 dark:hover:border-white/10
                      flex items-center justify-center gap-2"
           >
             <span>{showAllKPIs ? 'Show Less' : `Show More (${kpis.length - displayedKPIs.length} more)`}</span>

@@ -102,6 +102,13 @@ export const useStore = create<AppState>((set, get) => ({
   activeLenses: getInitialActiveLenses(),
   currentSite: getInitialSite(),
 
+  // Phase 4: KPI ↔ Overlay Enhancement
+  heatMapMode: 'gradient',
+  overlayIntensityData: {},
+  kpiSpatialContext: null,
+  heatMapIntensity: 0.7,
+  particleAnimationEnabled: true,
+
   // Actions
   loadDataset: async (datasetId: string) => {
     set({ loadingState: 'loading', error: null });
@@ -109,7 +116,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     try {
       const { layout, entities } = await DataService.loadDataset(datasetId);
-      
+
       set({
         currentDataset: datasetId,
         warehouseLayout: layout,
@@ -124,12 +131,12 @@ export const useStore = create<AppState>((set, get) => ({
 
       console.log('Dataset loaded successfully, now loading KPI data and inventory...');
       console.log('🔍 About to call loadInventoryData for:', datasetId);
-      
+
       // Load KPI data in background
       get().loadKPIData(datasetId).catch(err => {
         console.error('KPI data load failed but continuing:', err);
       });
-      
+
       // Load inventory data in background - IMPORTANT!
       console.log('📦 Calling loadInventoryData now...');
       get().loadInventoryData(datasetId).catch(err => {
@@ -153,7 +160,7 @@ export const useStore = create<AppState>((set, get) => ({
       selectedRack: null,
       cameraReset: get().cameraReset + 1,
     });
-    
+
     // Reload current dataset
     if (currentDataset) {
       get().loadDataset(currentDataset);
@@ -170,7 +177,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   selectBox: (boxId: string | null) => {
     set({ selectedBox: boxId });
-    
+
     // If selecting a box, also find and select its parent rack
     if (boxId) {
       const box = get().boxes.find(b => b.box_id === boxId);
@@ -200,13 +207,13 @@ export const useStore = create<AppState>((set, get) => ({
   toggleEntityType: (entityType) => {
     const currentTypes = get().visibleEntityTypes;
     const newTypes = new Set(currentTypes);
-    
+
     if (newTypes.has(entityType)) {
       newTypes.delete(entityType);
     } else {
       newTypes.add(entityType);
     }
-    
+
     set({ visibleEntityTypes: newTypes });
   },
 
@@ -270,7 +277,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   selectKPI: (kpiId: string | null) => {
     const currentKPI = get().selectedKPI;
-    
+
     // If clicking the same KPI, deselect it
     if (currentKPI === kpiId) {
       set({
@@ -315,7 +322,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (heatData) {
         const topZones = MonitoringService.getTopZones(heatData, 3);
         set({ highlightedZones: new Set(topZones) });
-        
+
         // Focus on the top zone
         if (topZones[0]) {
           get().focusOnZone(topZones[0], true);
@@ -357,14 +364,14 @@ export const useStore = create<AppState>((set, get) => ({
       const { boxes, items } = await DataService.loadInventoryData(scenarioId);
       console.log(`✅ Loaded ${boxes.length} boxes with ${items.size} item groups`);
       console.log('📦 First 3 boxes:', boxes.slice(0, 3));
-      
+
       set({
         boxes,
         inventory: items
       });
-      
+
       console.log('✅ Store updated with boxes. Current store boxes count:', get().boxes.length);
-      
+
       // Log which racks have boxes
       const boxesByRack = new Map<string, number>();
       boxes.forEach(box => {
@@ -396,13 +403,13 @@ export const useStore = create<AppState>((set, get) => ({
   toggleHierarchyNode: (nodeId: string) => {
     const expanded = get().hierarchyExpanded;
     const newExpanded = new Set(expanded);
-    
+
     if (newExpanded.has(nodeId)) {
       newExpanded.delete(nodeId);
     } else {
       newExpanded.add(nodeId);
     }
-    
+
     set({ hierarchyExpanded: newExpanded });
   },
 
@@ -420,7 +427,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (box.rack_id.toLowerCase().includes(lowerQuery)) return true;
 
       // Search by items in box
-      return box.items.some(item => 
+      return box.items.some(item =>
         item.sku.toLowerCase().includes(lowerQuery) ||
         item.product_name.toLowerCase().includes(lowerQuery) ||
         item.category.toLowerCase().includes(lowerQuery)
@@ -432,12 +439,12 @@ export const useStore = create<AppState>((set, get) => ({
   setTickerKPIVisibility: (kpiId: string, visible: boolean) => {
     const tickerKPIs = get().tickerKPIs;
     const currentConfig = tickerKPIs[kpiId] || { visible: true, order: 999 };
-    
+
     const newConfig = {
       ...tickerKPIs,
       [kpiId]: { ...currentConfig, visible }
     };
-    
+
     set({ tickerKPIs: newConfig });
     localStorage.setItem('warehouse-ticker-config', JSON.stringify(newConfig));
   },
@@ -445,19 +452,19 @@ export const useStore = create<AppState>((set, get) => ({
   setTickerKPIOrder: (kpiIds: string[]) => {
     const tickerKPIs = get().tickerKPIs;
     const newConfig = { ...tickerKPIs };
-    
+
     kpiIds.forEach((kpiId, index) => {
       const currentConfig = newConfig[kpiId] || { visible: true, order: 999 };
       newConfig[kpiId] = { ...currentConfig, order: index };
     });
-    
+
     set({ tickerKPIs: newConfig });
     localStorage.setItem('warehouse-ticker-config', JSON.stringify(newConfig));
   },
 
   setSimulationEnabled: (enabled: boolean) => {
     set({ simulationEnabled: enabled });
-    
+
     if (enabled) {
       get().startKPISimulation();
     } else {
@@ -494,20 +501,20 @@ export const useStore = create<AppState>((set, get) => ({
   // Lens and context actions
   toggleLens: (lensType: LensType) => {
     const activeLenses = get().activeLenses;
-    
+
     // Single-select behavior: only one lens can be active at a time
     // If clicking the same lens, deselect it (return to full view)
     // If clicking a different lens, select only that one
     const newLenses = new Set<LensType>();
-    
+
     if (!activeLenses.has(lensType)) {
       newLenses.add(lensType);
     }
     // If activeLenses has lensType, newLenses stays empty (deselect)
-    
+
     set({ activeLenses: newLenses });
     localStorage.setItem('warehouse-active-lenses', JSON.stringify(Array.from(newLenses)));
-    
+
     // Apply lens effects
     get().applyLensEffects();
   },
@@ -515,7 +522,7 @@ export const useStore = create<AppState>((set, get) => ({
   setActiveLenses: (lenses: Set<LensType>) => {
     set({ activeLenses: lenses });
     localStorage.setItem('warehouse-active-lenses', JSON.stringify(Array.from(lenses)));
-    
+
     // Apply lens effects
     get().applyLensEffects();
   },
@@ -528,19 +535,19 @@ export const useStore = create<AppState>((set, get) => ({
   // Apply effects when lenses change
   applyLensEffects: () => {
     const activeLenses = get().activeLenses;
-    
+
     if (activeLenses.size === 0) {
       // No lenses active - show all entities (full warehouse view)
-      set({ 
+      set({
         visibleEntityTypes: new Set(['worker', 'forklift', 'pallet', 'inventory', 'truck'])
       });
       return;
     }
-    
+
     // Get entity types from the active lens (only one can be active)
     const lensType = Array.from(activeLenses)[0];
     const lens = getLensById(lensType);
-    
+
     if (lens) {
       set({ visibleEntityTypes: new Set(lens.entityTypes) as Set<any> });
     }
@@ -550,18 +557,41 @@ export const useStore = create<AppState>((set, get) => ({
   getEntitiesByLens: () => {
     const entities = get().entities;
     const activeLenses = get().activeLenses;
-    
+
     if (activeLenses.size === 0) {
       return entities;
     }
-    
+
     const lensType = Array.from(activeLenses)[0];
     const lens = getLensById(lensType);
-    
+
     if (!lens) {
       return entities;
     }
-    
+
     return entities.filter(e => lens.entityTypes.includes(e.entity_type));
   },
+
+  // Phase 4: KPI ↔ Overlay Enhancement actions
+  setHeatMapMode: (mode) => set({ heatMapMode: mode }),
+
+  setOverlayIntensityData: (data) => set({ overlayIntensityData: data }),
+
+  setKPISpatialContext: (context) => set({ kpiSpatialContext: context }),
+
+  setHeatMapIntensity: (intensity) => set({
+    heatMapIntensity: Math.max(0.3, Math.min(1.0, intensity))
+  }),
+
+  toggleParticleAnimation: () => set((state) => ({
+    particleAnimationEnabled: !state.particleAnimationEnabled
+  })),
+
+  selectKPIWithSpatialContext: (kpi, context) => set({
+    selectedKPI: kpi.id,
+    kpiSpatialContext: context,
+    activeOverlay: context.overlayType,
+    heatMapMode: context.visualizationMode,
+    overlayIntensityData: context.intensityData
+  }),
 }));

@@ -10,6 +10,7 @@ import OverlayLegend from './components/Controls/OverlayLegend';
 import LeftSidebar from './components/Layout/LeftSidebar';
 import ObjectiveBar from './components/Layout/ObjectiveBar';
 import TopNavBar from './components/Layout/TopNavBar';
+import CommandBarContainer from './components/CommandBar/CommandBarContainer';
 
 function App() {
   const loadDataset = useStore((state) => state.loadDataset);
@@ -76,6 +77,9 @@ function App() {
 
       {/* Error Display */}
       <ErrorDisplay />
+
+      {/* Agent Command Bar - Floating overlay */}
+      <CommandBarContainer controlsRef={controlsRef} />
     </div>
   );
 }

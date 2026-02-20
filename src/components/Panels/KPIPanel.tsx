@@ -4,6 +4,9 @@ import type { KPI } from '../../types';
 import { getLensById } from '../../config/lenses';
 import { getKPIsForCategories } from '../../config/kpiCategories';
 
+import { KPIService } from '../../services/KPIService';
+import { Loader2 } from 'lucide-react';
+
 interface KPICardProps {
   kpi: KPI;
   isSelected: boolean;
@@ -14,9 +17,12 @@ interface KPICardPropsWithPriority extends KPICardProps {
   isPrioritized?: boolean;
 }
 
-function KPICard({ kpi, isSelected, onClick, isPrioritized = false }: KPICardPropsWithPriority) {
+// ... (KPICard component code remains same, but I need to pass isLoading prop)
+
+function KPICard({ kpi, isSelected, onClick, isPrioritized = false, isLoading = false }: KPICardPropsWithPriority & { isLoading?: boolean }) {
   const { label, value, unit, trend, status, description } = kpi;
 
+  // ... (styles remain same)
   // Determine status styling with subtle approach
   const statusGradients = {
     Normal: 'bg-gradient-to-br from-emerald-500/10 to-transparent',
@@ -58,13 +64,20 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false }: KPICardPro
         ${status === 'Critical' ? 'animate-subtle-pulse' : ''}
         ${statusGradients[status]}
       `}
-      onClick={onClick}
+      onClick={!isLoading ? onClick : undefined}
       title={description}
     >
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-10">
+          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+        </div>
+      )}
+
       {/* Status indicator dot */}
       <div className="absolute top-3 right-3 flex items-center gap-1">
-        <div className={`w-1.5 h-1.5 rounded-full ${statusDotColors[status]} shadow-lg`} 
-             style={{ boxShadow: `0 0 6px ${status === 'Critical' ? '#f87171' : status === 'Watch' ? '#fbbf24' : '#34d399'}` }} />
+        <div className={`w-1.5 h-1.5 rounded-full ${statusDotColors[status]} shadow-lg`}
+          style={{ boxShadow: `0 0 6px ${status === 'Critical' ? '#f87171' : status === 'Watch' ? '#fbbf24' : '#34d399'}` }} />
         <span className={`text-[10px] font-medium ${statusTextColors[status]}`}>
           {status}
         </span>
@@ -99,9 +112,10 @@ function KPICard({ kpi, isSelected, onClick, isPrioritized = false }: KPICardPro
       )}
 
       {/* Hover hint */}
-      {kpi.overlayType && (
-        <div className="mt-2 text-[10px] text-gray-500">
-          Click to view on map
+      {kpi.overlayType && !isLoading && (
+        <div className="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50"></span>
+          Click to analyze heatmap
         </div>
       )}
     </div>
@@ -114,19 +128,57 @@ export default function KPIPanel() {
   const selectedKPI = useStore((state) => state.selectedKPI);
   const loadingState = useStore((state) => state.loadingState);
   const activeLenses = useStore((state) => state.activeLenses);
+  const selectKPIWithSpatialContext = useStore((state) => state.selectKPIWithSpatialContext);
+
   const [showAllKPIs, setShowAllKPIs] = React.useState(false);
+  const [analyzingKPIId, setAnalyzingKPIId] = React.useState<string | null>(null);
+
+  // Handle KPI click with spatial analysis
+  const handleKPIClick = async (kpi: KPI) => {
+    if (selectedKPI === kpi.id) {
+      selectKPI(null);
+      return;
+    }
+
+    setAnalyzingKPIId(kpi.id);
+
+    try {
+      // Get current state snapshot without subscription
+      const state = useStore.getState();
+
+      const warehouseStatePayload = KPIService.buildWarehouseStatePayload(
+        state.warehouseLayout?.zones || [],
+        state.entities,
+        {
+          position: [50, 50, 50], // Approximate camera position
+          target: [0, 0, 0]
+        }
+      );
+
+      // Perform spatial analysis
+      const context = await KPIService.analyzeKPISpatialContext(kpi, warehouseStatePayload);
+
+      // Update store with context
+      selectKPIWithSpatialContext(kpi, context);
+
+    } catch (err) {
+      console.error('KPI analysis failed:', err);
+      // Fallback to simple selection
+      selectKPI(kpi.id);
+    } finally {
+      setAnalyzingKPIId(null);
+    }
+  };
 
   // Debug logging
-  console.log('KPIPanel render:', { loadingState, kpisCount: kpis.length, kpis });
+  console.log('KPIPanel render:', { loadingState, kpisCount: kpis.length });
 
   // Don't show until data is loaded
   if (loadingState !== 'success') {
-    console.log('KPIPanel: waiting for data load, state:', loadingState);
     return null;
   }
 
   if (kpis.length === 0) {
-    console.log('KPIPanel: no KPIs loaded');
     return null;
   }
 
@@ -134,7 +186,7 @@ export default function KPIPanel() {
   const getPrioritizedKPIs = (): { kpis: KPI[]; prioritizedIds: Set<string> } => {
     if (activeLenses.size === 0) {
       // No lens: show default core KPIs
-      const coreKPIIds = ['throughput', 'labor_utilization', 'orders_at_risk', 'zone_congestion'];
+      const coreKPIIds = ['throughput', 'labor_utilization', 'orders_at_risk', 'zone_congestion', 'safety_incidents'];
       const coreKPIs = kpis.filter(kpi => coreKPIIds.includes(kpi.id));
       const otherKPIs = kpis.filter(kpi => !coreKPIIds.includes(kpi.id));
       return {
@@ -149,7 +201,7 @@ export default function KPIPanel() {
 
     if (!lens) {
       // Fallback to default
-      const coreKPIIds = ['throughput', 'labor_utilization', 'orders_at_risk', 'zone_congestion'];
+      const coreKPIIds = ['throughput', 'labor_utilization', 'orders_at_risk'];
       return {
         kpis: kpis.filter(kpi => coreKPIIds.includes(kpi.id)),
         prioritizedIds: new Set(coreKPIIds)
@@ -176,7 +228,7 @@ export default function KPIPanel() {
 
   return (
     <div className="w-full">
-      {/* Header - removed, now in parent sidebar */}
+      {/* Header - in parent sidebar */}
       {selectedKPI && (
         <div className="mb-3 px-2">
           <button
@@ -199,7 +251,8 @@ export default function KPIPanel() {
             kpi={kpi}
             isSelected={selectedKPI === kpi.id}
             isPrioritized={prioritizedIds.has(kpi.id)}
-            onClick={() => selectKPI(kpi.id)}
+            isLoading={analyzingKPIId === kpi.id}
+            onClick={() => handleKPIClick(kpi)}
           />
         ))}
       </div>
@@ -222,10 +275,10 @@ export default function KPIPanel() {
                      flex items-center justify-center gap-2"
           >
             <span>{showAllKPIs ? 'Show Less' : `Show More (${kpis.length - displayedKPIs.length} more)`}</span>
-            <svg 
+            <svg
               className={`w-4 h-4 transition-transform duration-200 ${showAllKPIs ? 'rotate-180' : ''}`}
-              fill="none" 
-              stroke="currentColor" 
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

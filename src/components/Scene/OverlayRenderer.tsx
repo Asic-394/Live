@@ -2,55 +2,88 @@ import { useMemo, memo } from 'react';
 import { useStore } from '../../state/store';
 import { interpolateColor, getColorScaleForOverlay } from '../../utils/heatmapMaterials';
 import ZoneHeatOverlay from './ZoneHeatOverlay';
+import ColumnHeatMap from './ColumnHeatMap';
+import ParticleHeatMap from './ParticleHeatMap';
 import type { OverlayType } from '../../types';
 
 function OverlayRendererComponent() {
   const activeOverlay = useStore((state) => state.activeOverlay);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
-  
-  // Get the heat data directly from the overlay data Map
-  // Use a custom selector to avoid re-renders when the Map reference changes
-  const heatData = useStore((state) => {
+  const heatMapMode = useStore((state) => state.heatMapMode);
+
+  // Phase 4: Get intensity data directly from record
+  const overlayIntensityData = useStore((state) => state.overlayIntensityData);
+
+  // Phase 2: Get legacy overlay data
+  const legacyOverlayData = useStore((state) => {
     if (!activeOverlay) return null;
-    const data = state.overlayData.get(activeOverlay as OverlayType);
-    return data || null;
+    return state.overlayData.get(activeOverlay as OverlayType) || null;
   });
 
-  // Memoize the overlay elements with stable dependencies
-  const overlayElements = useMemo(() => {
-    if (!activeOverlay || !warehouseLayout?.zones || !heatData || heatData.length === 0) {
-      return [];
+  // Unified intensity data map
+  const intensityData = useMemo(() => {
+    // If we have Phase 4 data, use it
+    if (Object.keys(overlayIntensityData).length > 0) {
+      return overlayIntensityData;
     }
 
-    const colorScale = getColorScaleForOverlay(activeOverlay);
-    const elements: JSX.Element[] = [];
-
-    for (const zone of warehouseLayout.zones) {
-      const data = heatData.find(d => d.zoneId === zone.element_id);
-      if (!data) continue;
-
-      const color = interpolateColor(colorScale, data.intensity);
-      
-      elements.push(
-        <ZoneHeatOverlay
-          key={zone.element_id}
-          zone={zone}
-          color={color}
-          opacity={0.6}
-        />
-      );
+    // Otherwise fall back to Phase 2 data
+    if (legacyOverlayData) {
+      const data: Record<string, number> = {};
+      legacyOverlayData.forEach(d => {
+        data[d.zoneId] = d.intensity;
+      });
+      return data;
     }
 
-    return elements;
-  }, [activeOverlay, warehouseLayout?.zones, heatData]);
+    return {};
+  }, [overlayIntensityData, legacyOverlayData]);
 
-  if (overlayElements.length === 0) {
+  if (!activeOverlay || !warehouseLayout?.zones || Object.keys(intensityData).length === 0) {
     return null;
   }
 
+  const colorScale = getColorScaleForOverlay(activeOverlay);
+
+  // Render based on selected mode
+  if (heatMapMode === 'column') {
+    return (
+      <ColumnHeatMap
+        zones={warehouseLayout.zones}
+        intensityData={intensityData}
+        colorScale={colorScale}
+      />
+    );
+  }
+
+  if (heatMapMode === 'particle') {
+    return (
+      <ParticleHeatMap
+        zones={warehouseLayout.zones}
+        intensityData={intensityData}
+        colorScale={colorScale}
+      />
+    );
+  }
+
+  // Default: Gradient (ZoneHeatOverlay)
   return (
     <group key={`overlay-${activeOverlay}`}>
-      {overlayElements}
+      {warehouseLayout.zones.map(zone => {
+        const intensity = intensityData[zone.element_id];
+        if (intensity === undefined) return null;
+
+        const color = interpolateColor(colorScale, intensity);
+
+        return (
+          <ZoneHeatOverlay
+            key={zone.element_id}
+            zone={zone}
+            color={color}
+            opacity={0.6}
+          />
+        );
+      })}
     </group>
   );
 }

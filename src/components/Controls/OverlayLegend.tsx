@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../../state/store';
 import { COLOR_SCALES } from '../../utils/heatmapMaterials';
+import HeatMapControls from './HeatMapControls';
 
 export default function OverlayLegend() {
   const activeOverlay = useStore((state) => state.activeOverlay);
@@ -86,7 +87,7 @@ export default function OverlayLegend() {
 
       {/* Color Gradient */}
       <div className="mb-3">
-        <div 
+        <div
           className="h-7 rounded-lg shadow-inner border border-white/10"
           style={{
             background: `linear-gradient(to right, ${colorScale.map(stop => stop.color).join(', ')})`
@@ -108,12 +109,12 @@ export default function OverlayLegend() {
       {/* Legend items */}
       <div className="pt-3 border-t border-white/5 space-y-2">
         {colorScale.map((stop, index) => {
-          const label = index === 0 ? 'Low' : 
-                       index === colorScale.length - 1 ? 'High' : 
-                       'Moderate';
+          const label = index === 0 ? 'Low' :
+            index === colorScale.length - 1 ? 'High' :
+              'Moderate';
           return (
             <div key={index} className="flex items-center gap-2.5">
-              <div 
+              <div
                 className="w-4 h-4 rounded border border-white/10 shadow-sm"
                 style={{ backgroundColor: stop.color }}
               />
@@ -124,6 +125,9 @@ export default function OverlayLegend() {
           );
         })}
       </div>
+
+      {/* Heat Map Controls (Phase 4) */}
+      <HeatMapControls />
     </div>
   );
 }

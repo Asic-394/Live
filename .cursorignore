@@ -1,0 +1,60 @@
+# Cursor Ignore File - Token Usage Optimization
+# 
+# This file excludes large data files and historical documentation from AI context
+# to reduce token usage while preserving code quality.
+#
+# IMPORTANT: Excluded files can still be referenced explicitly when needed.
+# For example: "Look at inventory_items.csv" will still work - the AI can read
+# the file on demand, it just won't be automatically included in every context.
+
+# ============================================================================
+# DATA FILES - Exclude large CSV data files (not code)
+# ============================================================================
+# These files contain warehouse data (thousands of rows), not code logic.
+# For code questions, AI needs the parser code (CSVParser.ts) and schema docs
+# (DataContracts.md), not the actual data rows.
+# 
+# Schema documentation is kept in docs/DataContracts.md (included)
+# Parser code is kept in src/data/parsers/CSVParser.ts (included)
+# Usage examples are kept in src/services/DataService.ts (included)
+
+*.csv
+public/datasets/**/*.csv
+
+# Optional: Exclude JSON data files if they become large
+# Currently small (~1-4KB each), but future-proof
+# Uncomment if JSON data files grow large:
+# public/data/**/*.json
+
+# ============================================================================
+# BUILD ARTIFACTS - Exclude generated files
+# ============================================================================
+# These are build outputs and dependencies, not source code
+
+dist/
+dist-ssr/
+node_modules/
+*.log
+*.cache
+
+# ============================================================================
+# HISTORICAL DOCUMENTATION - Exclude implementation summaries
+# ============================================================================
+# These are historical records of completed work, not active code documentation.
+# Core architecture docs in docs/ remain included for active development.
+
+*_SUMMARY.md
+*_COMPLETE.md
+*_TESTING.md
+*_FIX_SUMMARY.md
+*_UPDATE.md
+
+# ============================================================================
+# KEEP INCLUDED (explicitly NOT excluded)
+# ============================================================================
+# The following remain accessible to AI:
+# - All source code: src/**/*.ts, src/**/*.tsx
+# - All config files: package.json, tsconfig.json, vite.config.ts, etc.
+# - Core documentation: docs/*.md (Architecture.md, PRD.md, DataContracts.md, etc.)
+# - README.md and essential project files
+# - All JSON config files (not data files)

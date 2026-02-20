@@ -76,6 +76,20 @@
   will-change: transform;
 }
 
+/* RGB border animation for command bar */
+@keyframes rgb-border {
+  0% { border-color: #ff0000; }
+  33% { border-color: #00ff00; }
+  66% { border-color: #0000ff; }
+  100% { border-color: #ff0000; }
+}
+
+.animate-rgb-border {
+  animation: rgb-border 3s linear infinite;
+  border-width: 2px;
+  border-style: solid;
+}
+
 @layer base {
   * {
     margin: 0;

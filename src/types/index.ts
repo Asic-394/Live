@@ -138,14 +138,14 @@ export interface AppState {
   inventory: Map<string, BoxItem[]>;
   loadingState: LoadingState;
   error: string | null;
-  
+
   // Scene state
   selectedEntity: string | null;
   selectedRack: string | null; // Rack element_id
   selectedBox: string | null; // Box box_id
   cameraReset: number; // Increment to trigger camera reset
   cameraMode: CameraMode;
-  
+
   // UI state
   theme: Theme;
   useRealShadows: boolean; // Toggle between real shadow mapping and blob shadows
@@ -155,7 +155,7 @@ export interface AppState {
   hierarchySectionExpanded: boolean; // Hierarchy section expanded state
   healthSectionExpanded: boolean; // Health section expanded state
   filterSectionExpanded: boolean; // Filter section expanded state
-  
+
   // Monitoring state (Slice 2)
   kpis: KPI[];
   selectedKPI: string | null;
@@ -164,15 +164,22 @@ export interface AppState {
   drillDownData: DrillDownData | null;
   highlightedZones: Set<string>;
   focusedZone: string | null;
-  
+
   // Ticker configuration
   tickerKPIs: Record<string, TickerKPIConfig>;
   simulationEnabled: boolean;
-  
+
   // Lens and context state
   activeLenses: Set<LensType>;
   currentSite: Site;
-  
+
+  // Phase 4: KPI ↔ Overlay Enhancement
+  heatMapMode: 'gradient' | 'column' | 'particle';
+  overlayIntensityData: Record<string, number>;  // zoneId → intensity
+  kpiSpatialContext: any | null;  // KPISpatialContext from phase4 types
+  heatMapIntensity: number;  // 0.3 - 1.0
+  particleAnimationEnabled: boolean;
+
   // Actions
   loadDataset: (datasetId: string) => Promise<void>;
   resetScene: () => void;
@@ -189,7 +196,7 @@ export interface AppState {
   toggleHierarchySection: () => void;
   toggleHealthSection: () => void;
   toggleFilterSection: () => void;
-  
+
   // Monitoring actions (Slice 2)
   loadKPIData: (scenarioId: string) => Promise<void>;
   selectKPI: (kpiId: string | null) => void;
@@ -198,27 +205,35 @@ export interface AppState {
   highlightZones: (zoneIds: string[]) => void;
   focusOnZone: (zoneId: string, smooth?: boolean) => void;
   clearMonitoringState: () => void;
-  
+
   // Inventory actions
   loadInventoryData: (scenarioId: string) => Promise<void>;
   getBoxesByRack: (rackId: string) => Box[];
   getBoxHierarchy: (boxId: string) => string[];
   toggleHierarchyNode: (nodeId: string) => void;
   searchInventory: (query: string) => Box[];
-  
+
   // Ticker configuration actions
   setTickerKPIVisibility: (kpiId: string, visible: boolean) => void;
   setTickerKPIOrder: (kpiIds: string[]) => void;
   setSimulationEnabled: (enabled: boolean) => void;
   startKPISimulation: () => void;
   stopKPISimulation: () => void;
-  
+
   // Lens and context actions
   toggleLens: (lensType: LensType) => void;
   setActiveLenses: (lenses: Set<LensType>) => void;
   setSite: (site: Site) => void;
   applyLensEffects: () => void;
   getEntitiesByLens: () => Entity[];
+
+  // Phase 4: KPI ↔ Overlay Enhancement actions
+  setHeatMapMode: (mode: 'gradient' | 'column' | 'particle') => void;
+  setOverlayIntensityData: (data: Record<string, number>) => void;
+  setKPISpatialContext: (context: any | null) => void;
+  setHeatMapIntensity: (intensity: number) => void;
+  toggleParticleAnimation: () => void;
+  selectKPIWithSpatialContext: (kpi: KPI, context: any) => void;
 }
 
 // Three.js coordinate conversion types

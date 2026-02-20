@@ -84,8 +84,8 @@ export class InventoryGenerator {
         'Zone-B': 1.0, // Storage 
         'Zone-D': 1.0, // Staging zone
       },
-      fastMovingLevels: [1, 2, 3],
-      slowMovingLevels: [5, 6, 7],
+      fastMovingLevels: [1, 2],
+      slowMovingLevels: [3],
     },
     scenario_congestion: {
       occupancyRate: 0.95, // Very full warehouse
@@ -94,8 +94,8 @@ export class InventoryGenerator {
         'Zone-B': 1.2, // Overfull storage zone (>100%)
         'Zone-D': 1.0,
       },
-      fastMovingLevels: [1, 2, 3],
-      slowMovingLevels: [5, 6, 7],
+      fastMovingLevels: [1, 2],
+      slowMovingLevels: [3],
     },
     scenario_dock_delay: {
       occupancyRate: 0.75, // Moderately stocked
@@ -104,8 +104,8 @@ export class InventoryGenerator {
         'Zone-B': 1.0,
         'Zone-D': 1.3, // Staging overflow - extra full
       },
-      fastMovingLevels: [1, 2, 3],
-      slowMovingLevels: [5, 6, 7],
+      fastMovingLevels: [1, 2],
+      slowMovingLevels: [3],
     },
   };
 
@@ -174,7 +174,7 @@ export class InventoryGenerator {
     _startIndex: number
   ): Box[] {
     const boxes: Box[] = [];
-    const levels = rack.metadata?.levels || 7;
+    const levels = rack.metadata?.levels || 3;
     const slotsPerLevel = 3; // 3 slots per level for efficient space usage
 
     for (let level = 1; level <= levels; level++) {
@@ -211,7 +211,7 @@ export class InventoryGenerator {
     config: ScenarioConfig
   ): Box {
     // Calculate position within rack
-    const levelHeight = (rack.height || 20) / 7;
+    const levelHeight = (rack.height || 20) / 3;
     const z = (rack.z || 0) + levelHeight * (level - 0.5);
     
     // Offset position horizontally

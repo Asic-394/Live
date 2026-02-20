@@ -5,7 +5,7 @@
     { "id": "throughput", "value": 42, "trend": -8 },
     { "id": "labor_utilization", "value": 72, "trend": -5 },
     { "id": "orders_at_risk", "value": 7, "trend": 5 },
-    { "id": "zone_congestion", "value": 0.68, "trend": 12 },
+    { "id": "zone_congestion", "value": 14, "trend": 12 },
     { "id": "on_time_delivery", "value": 89.8, "trend": -4 },
     { "id": "order_accuracy", "value": 98.2, "trend": -1 },
     { "id": "dock_utilization", "value": 65, "trend": -8 },
@@ -16,29 +16,32 @@
   "drillDowns": {
     "throughput": {
       "drivers": [
-        { "label": "Zone-D", "value": 8, "contribution": 19, "zone": "Zone-D" },
-        { "label": "Zone-B", "value": 19, "contribution": 45, "zone": "Zone-B" },
-        { "label": "Zone-C", "value": 15, "contribution": 36, "zone": "Zone-C" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 24, "contribution": 42, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 19, "contribution": 33, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 15, "contribution": 26, "zone": "Zone-B3" },
+        { "label": "Zone-D", "value": 8, "contribution": 14, "zone": "Zone-D" }
       ]
     },
     "labor_utilization": {
       "drivers": [
-        { "label": "Zone-B", "value": 80, "contribution": 40, "zone": "Zone-B" },
-        { "label": "Zone-C", "value": 72, "contribution": 35, "zone": "Zone-C" },
+        { "label": "Zone-B1 (Fast-Pick)", "value": 86, "contribution": 38, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 80, "contribution": 32, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 74, "contribution": 28, "zone": "Zone-B3" },
         { "label": "Zone-D", "value": 65, "contribution": 25, "zone": "Zone-D" }
       ]
     },
     "orders_at_risk": {
       "drivers": [
         { "label": "Zone-D", "value": 5, "contribution": 71, "zone": "Zone-D" },
-        { "label": "Zone-C", "value": 2, "contribution": 29, "zone": "Zone-C" }
+        { "label": "Zone-B1 (Fast-Pick)", "value": 2, "contribution": 29, "zone": "Zone-B1" }
       ]
     },
     "zone_congestion": {
       "drivers": [
-        { "label": "Zone-D", "value": 0.75, "contribution": 50, "zone": "Zone-D" },
-        { "label": "Zone-C", "value": 0.62, "contribution": 32, "zone": "Zone-C" },
-        { "label": "Zone-B", "value": 0.55, "contribution": 18, "zone": "Zone-B" }
+        { "label": "Zone-D", "value": 15, "contribution": 40, "zone": "Zone-D" },
+        { "label": "Zone-B1 (Fast-Pick)", "value": 13, "contribution": 35, "zone": "Zone-B1" },
+        { "label": "Zone-B2 (Reserve)", "value": 11, "contribution": 25, "zone": "Zone-B2" },
+        { "label": "Zone-B3 (Bulk)", "value": 10, "contribution": 20, "zone": "Zone-B3" }
       ]
     }
   }

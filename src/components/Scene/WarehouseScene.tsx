@@ -11,6 +11,8 @@ import EntityRenderer from './EntityRenderer';
 import OverlayRenderer from './OverlayRenderer';
 import ZoneHighlighter from './ZoneHighlighter';
 import InstancedInventoryBoxes from './InstancedInventoryBoxes';
+import ZoneLabels from './ZoneLabels';
+import ZoneKPIValues from './ZoneKPIValues';
 import { CoordinateMapper } from '../../utils/coordinates';
 import type { WarehouseLayout } from '../../types';
 
@@ -293,6 +295,10 @@ function SceneContent({ controlsRef }: { controlsRef: React.RefObject<any> }) {
       {/* Slice 2: Health Monitoring Components */}
       <OverlayRenderer />
       <ZoneHighlighter />
+      
+      {/* Zone labels and KPI values */}
+      <ZoneLabels />
+      <ZoneKPIValues />
     </>
   );
 }

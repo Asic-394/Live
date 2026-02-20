@@ -1,6 +1,6 @@
 import { useMemo, memo } from 'react';
 import { useStore } from '../../state/store';
-import { interpolateColor, getColorScaleForOverlay } from '../../utils/heatmapMaterials';
+import { getColorScaleForOverlay, interpolateColor } from '../../utils/heatmapMaterials';
 import ZoneHeatOverlay from './ZoneHeatOverlay';
 import ColumnHeatMap from './ColumnHeatMap';
 import ParticleHeatMap from './ParticleHeatMap';

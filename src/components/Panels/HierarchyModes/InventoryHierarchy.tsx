@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../../state/store';
 import type { WarehouseLayoutElement } from '../../../types';
 
@@ -28,20 +28,37 @@ function TreeNode({
   isSelected,
   metadata,
 }: TreeNodeProps) {
-  const icons = {
-    zone: '📦',
-    aisle: '🛤️',
-    rack: '🏗️',
-    box: '📊',
+  const typeIcon: Record<string, React.ReactNode> = {
+    zone: (
+      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+    aisle: (
+      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+      </svg>
+    ),
+    rack: (
+      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+      </svg>
+    ),
+    box: (
+      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
   };
 
   return (
     <div className={`text-sm ${level === 0 ? 'mb-2' : ''}`}>
       <div
-        className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 cursor-pointer transition-colors ${
-          isSelected ? 'bg-emerald-500/20 text-emerald-300' : 'text-gray-300'
+        className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors ${
+          isSelected ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'
         }`}
         style={{ paddingLeft: `${level * 1.25}rem` }}
+        data-selected={isSelected ? 'true' : undefined}
       >
         {hasChildren && (
           <button
@@ -49,7 +66,7 @@ function TreeNode({
               e.stopPropagation();
               onToggle();
             }}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <svg
               className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -62,8 +79,8 @@ function TreeNode({
           </button>
         )}
         {!hasChildren && <span className="w-4" />}
-        
-        <span className="text-base">{icons[type]}</span>
+
+        {typeIcon[type]}
         
         <button
           onClick={onSelect}
@@ -71,7 +88,7 @@ function TreeNode({
         >
           <span className={`${isSelected ? 'font-medium' : ''}`}>{label}</span>
           {metadata && (
-            <span className="text-xs text-gray-500 group-hover:text-gray-400">
+            <span className="text-xs text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400">
               {metadata}
             </span>
           )}
@@ -92,13 +109,25 @@ export default function InventoryHierarchy() {
   const boxes = useStore((state) => state.boxes);
   const hierarchyExpanded = useStore((state) => state.hierarchyExpanded);
   const toggleHierarchyNode = useStore((state) => state.toggleHierarchyNode);
+  const selectZone = useStore((state) => state.selectZone);
   const selectRack = useStore((state) => state.selectRack);
   const selectBox = useStore((state) => state.selectBox);
-  const focusOnZone = useStore((state) => state.focusOnZone);
+  const focusOnElement = useStore((state) => state.focusOnElement);
+  const selectedZone = useStore((state) => state.selectedZone);
   const selectedRack = useStore((state) => state.selectedRack);
   const selectedBox = useStore((state) => state.selectedBox);
   
   const [searchQuery, setSearchQuery] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const selected = container.querySelector('[data-selected="true"]');
+    if (selected) {
+      selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedZone, selectedRack, selectedBox]);
 
   if (!warehouseLayout) return null;
 
@@ -106,6 +135,13 @@ export default function InventoryHierarchy() {
   const zones = warehouseLayout.zones;
   const aisles = warehouseLayout.aisles;
   const racks = warehouseLayout.racks;
+
+  // Helper function to extract zone letter and format label
+  const getZoneLabel = (zone: WarehouseLayoutElement): string => {
+    const zoneLetter = zone.element_id.split('-')[1] || '';
+    const zoneName = zone.name || zone.element_id;
+    return zoneLetter ? `Zone ${zoneLetter} - ${zoneName}` : zoneName;
+  };
 
   // Group aisles by zone
   const aislesByZone = aisles.reduce((acc, aisle) => {
@@ -142,7 +178,7 @@ export default function InventoryHierarchy() {
   );
 
   return (
-    <div className="w-full text-gray-100 flex flex-col">
+    <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col">
       {/* Search */}
       <div className="mb-3 px-2">
         <input
@@ -150,12 +186,12 @@ export default function InventoryHierarchy() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search inventory hierarchy..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
+          className="w-full bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
         />
       </div>
 
       {/* Tree */}
-      <div className="max-h-[400px] overflow-y-auto space-y-1 px-2">
+      <div ref={scrollContainerRef} className="max-h-[400px] overflow-y-auto space-y-1 px-2">
         {filteredZones.map((zone) => {
           const zoneId = zone.element_id;
           const zoneAisles = aislesByZone[zoneId] || [];
@@ -165,14 +201,17 @@ export default function InventoryHierarchy() {
             <TreeNode
               key={zoneId}
               id={zoneId}
-              label={zone.name || zoneId}
+              label={getZoneLabel(zone)}
               type="zone"
               level={0}
               isExpanded={isZoneExpanded}
               hasChildren={zoneAisles.length > 0}
               onToggle={() => toggleHierarchyNode(zoneId)}
-              onSelect={() => focusOnZone(zoneId, true)}
-              isSelected={false}
+              onSelect={() => {
+                selectZone(zoneId);
+                focusOnElement(zoneId, 'zone', true);
+              }}
+              isSelected={selectedZone === zoneId}
             >
               {zoneAisles.map((aisle) => {
                 const aisleId = aisle.element_id;
@@ -189,7 +228,7 @@ export default function InventoryHierarchy() {
                     isExpanded={isAisleExpanded}
                     hasChildren={aisleRacks.length > 0}
                     onToggle={() => toggleHierarchyNode(aisleId)}
-                    onSelect={() => focusOnZone(aisleId, true)}
+                    onSelect={() => focusOnElement(aisleId, 'aisle', true)}
                     isSelected={false}
                   >
                     {aisleRacks.map((rack) => {
@@ -199,7 +238,7 @@ export default function InventoryHierarchy() {
                       
                       // Calculate occupancy
                       const totalBoxes = rackBoxes.length;
-                      const levels = rack.metadata?.levels || 7;
+                      const levels = rack.metadata?.levels || 3;
                       const occupancyPercent = Math.round((totalBoxes / (levels * 4)) * 100);
 
                       return (
@@ -213,6 +252,10 @@ export default function InventoryHierarchy() {
                           hasChildren={rackBoxes.length > 0}
                           onToggle={() => toggleHierarchyNode(rackId)}
                           onSelect={() => {
+                            const aisleId = rack.hierarchy?.parent_id;
+                            const aisle = aisles.find((a) => a.element_id === aisleId);
+                            const zoneIdForRack = aisle?.hierarchy?.parent_id ?? null;
+                            if (zoneIdForRack) selectZone(zoneIdForRack);
                             selectRack(rackId);
                             selectBox(null);
                           }}
@@ -235,7 +278,14 @@ export default function InventoryHierarchy() {
                                 isExpanded={false}
                                 hasChildren={false}
                                 onToggle={() => {}}
-                                onSelect={() => selectBox(box.box_id)}
+                                onSelect={() => {
+                                  const rackEl = racks.find((r) => r.element_id === box.rack_id);
+                                  const aisleId = rackEl?.hierarchy?.parent_id;
+                                  const aisle = aisleId ? aisles.find((a) => a.element_id === aisleId) : null;
+                                  const zoneIdForRack = aisle?.hierarchy?.parent_id ?? null;
+                                  if (zoneIdForRack) selectZone(zoneIdForRack);
+                                  selectBox(box.box_id);
+                                }}
                                 isSelected={selectedBox === box.box_id}
                                 metadata={
                                   <span className={capacityColor}>
@@ -257,7 +307,7 @@ export default function InventoryHierarchy() {
       </div>
 
       {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-400 flex justify-between px-2">
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex justify-between px-2">
         <span>{zones.length} zones</span>
         <span>{racks.length} racks</span>
         <span>{boxes.length} boxes</span>

@@ -56,7 +56,7 @@ export default function ScenarioSwitcher() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={loadingState === 'loading'}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
         title="Switch scenario"
       >
         {/* Scenario indicator dot */}
@@ -66,13 +66,13 @@ export default function ScenarioSwitcher() {
           }`}
         />
         
-        <span className="text-sm font-medium text-gray-300 group-hover:text-gray-100 hidden lg:inline">
+        <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 hidden lg:inline">
           {currentScenario?.name || 'Select Scenario'}
         </span>
         
         {/* Dropdown chevron */}
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -85,9 +85,9 @@ export default function ScenarioSwitcher() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-72 glass-panel rounded-lg shadow-xl border border-white/10 z-50 animate-fade-in">
+        <div className="absolute top-full right-0 mt-2 w-72 glass-panel rounded-lg shadow-xl border border-gray-200 dark:border-white/10 z-50 animate-fade-in">
           <div className="p-2">
-            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Select Scenario
             </div>
             
@@ -98,8 +98,8 @@ export default function ScenarioSwitcher() {
                 disabled={loadingState === 'loading'}
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   currentDataset === scenario.id
-                    ? 'bg-blue-500/20 text-blue-300'
-                    : 'hover:bg-white/5 text-gray-300'
+                    ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -112,7 +112,7 @@ export default function ScenarioSwitcher() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">{scenario.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{scenario.description}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{scenario.description}</div>
                   </div>
                   
                   {currentDataset === scenario.id && (
@@ -133,17 +133,17 @@ export default function ScenarioSwitcher() {
             ))}
             
             {/* Reset Button */}
-            <div className="border-t border-white/5 mt-2 pt-2">
+            <div className="border-t border-gray-200 dark:border-white/5 mt-2 pt-2">
               <button
                 onClick={() => {
                   resetScene();
                   setIsOpen(false);
                 }}
                 disabled={loadingState === 'loading'}
-                className="w-full text-left px-3 py-2.5 rounded-lg transition-colors hover:bg-white/5 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                className="w-full text-left px-3 py-2.5 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
                 title="Reset camera and reload current scenario"
               >
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -151,17 +151,17 @@ export default function ScenarioSwitcher() {
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                <div className="flex-1">
+                  <div className="flex-1">
                   <div className="text-sm font-medium">Reset Scene</div>
-                  <div className="text-xs text-gray-400 mt-0.5">Reload and reset camera</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Reload and reset camera</div>
                 </div>
               </button>
             </div>
           </div>
           
           {loadingState === 'loading' && (
-            <div className="border-t border-white/5 p-3">
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="border-t border-gray-200 dark:border-white/5 p-3">
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"

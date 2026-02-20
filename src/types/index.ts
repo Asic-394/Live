@@ -141,6 +141,7 @@ export interface AppState {
 
   // Scene state
   selectedEntity: string | null;
+  selectedZone: string | null; // Zone element_id (gates rack selection on canvas)
   selectedRack: string | null; // Rack element_id
   selectedBox: string | null; // Box box_id
   cameraReset: number; // Increment to trigger camera reset
@@ -164,6 +165,7 @@ export interface AppState {
   drillDownData: DrillDownData | null;
   highlightedZones: Set<string>;
   focusedZone: string | null;
+  focusedElementType: 'zone' | 'aisle' | 'rack' | null;
 
   // Ticker configuration
   tickerKPIs: Record<string, TickerKPIConfig>;
@@ -184,6 +186,7 @@ export interface AppState {
   loadDataset: (datasetId: string) => Promise<void>;
   resetScene: () => void;
   selectEntity: (entityId: string | null) => void;
+  selectZone: (zoneId: string | null) => void;
   selectRack: (rackId: string | null) => void;
   selectBox: (boxId: string | null) => void;
   setError: (error: string | null) => void;
@@ -204,6 +207,7 @@ export interface AppState {
   setDrillDownData: (data: DrillDownData | null) => void;
   highlightZones: (zoneIds: string[]) => void;
   focusOnZone: (zoneId: string, smooth?: boolean) => void;
+  focusOnElement: (elementId: string, elementType: 'zone' | 'aisle' | 'rack', smooth?: boolean) => void;
   clearMonitoringState: () => void;
 
   // Inventory actions

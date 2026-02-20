@@ -70,6 +70,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Scene state
   selectedEntity: null,
+  selectedZone: null,
   selectedRack: null,
   selectedBox: null,
   cameraReset: 0,
@@ -93,6 +94,7 @@ export const useStore = create<AppState>((set, get) => ({
   drillDownData: null,
   highlightedZones: new Set(),
   focusedZone: null,
+  focusedElementType: null as 'zone' | 'aisle' | 'rack' | null,
 
   // Ticker configuration
   tickerKPIs: getInitialTickerConfig(),
@@ -124,6 +126,7 @@ export const useStore = create<AppState>((set, get) => ({
         loadingState: 'success',
         error: null,
         selectedEntity: null,
+        selectedZone: null,
         selectedRack: null,
         selectedBox: null,
         cameraReset: get().cameraReset + 1, // Trigger camera reset
@@ -157,7 +160,9 @@ export const useStore = create<AppState>((set, get) => ({
     const currentDataset = get().currentDataset;
     set({
       selectedEntity: null,
+      selectedZone: null,
       selectedRack: null,
+      selectedBox: null,
       cameraReset: get().cameraReset + 1,
     });
 
@@ -171,20 +176,53 @@ export const useStore = create<AppState>((set, get) => ({
     set({ selectedEntity: entityId });
   },
 
+  selectZone: (zoneId: string | null) => {
+    set({ selectedZone: zoneId, selectedRack: null, selectedBox: null });
+  },
+
   selectRack: (rackId: string | null) => {
-    set({ selectedRack: rackId });
+    const updates: Record<string, unknown> = { selectedRack: rackId, selectedBox: null };
+    if (rackId) {
+      const layout = get().warehouseLayout;
+      if (layout) {
+        const rack = layout.racks.find(r => r.element_id === rackId);
+        const aisleId = rack?.hierarchy?.parent_id;
+        const aisle = aisleId ? layout.aisles.find(a => a.element_id === aisleId) : null;
+        const zoneId = aisle?.hierarchy?.parent_id ?? null;
+        if (zoneId) updates.selectedZone = zoneId;
+        if (zoneId || aisleId) {
+          const expanded = new Set(get().hierarchyExpanded);
+          if (zoneId) expanded.add(zoneId);
+          if (aisleId) expanded.add(aisleId);
+          updates.hierarchyExpanded = expanded;
+        }
+      }
+    }
+    set(updates as any);
   },
 
   selectBox: (boxId: string | null) => {
-    set({ selectedBox: boxId });
-
-    // If selecting a box, also find and select its parent rack
+    const updates: Record<string, unknown> = { selectedBox: boxId };
     if (boxId) {
       const box = get().boxes.find(b => b.box_id === boxId);
       if (box) {
-        set({ selectedRack: box.rack_id });
+        updates.selectedRack = box.rack_id;
+        const layout = get().warehouseLayout;
+        if (layout) {
+          const rack = layout.racks.find(r => r.element_id === box.rack_id);
+          const aisleId = rack?.hierarchy?.parent_id;
+          const aisle = aisleId ? layout.aisles.find(a => a.element_id === aisleId) : null;
+          const zoneId = aisle?.hierarchy?.parent_id ?? null;
+          if (zoneId) updates.selectedZone = zoneId;
+          const expanded = new Set(get().hierarchyExpanded);
+          if (zoneId) expanded.add(zoneId);
+          if (aisleId) expanded.add(aisleId);
+          expanded.add(box.rack_id);
+          updates.hierarchyExpanded = expanded;
+        }
       }
     }
+    set(updates as any);
   },
 
   setError: (error: string | null) => {
@@ -285,7 +323,8 @@ export const useStore = create<AppState>((set, get) => ({
         activeOverlay: null,
         drillDownData: null,
         highlightedZones: new Set(),
-        focusedZone: null
+        focusedZone: null,
+        focusedElementType: null
       });
       return;
     }
@@ -297,7 +336,8 @@ export const useStore = create<AppState>((set, get) => ({
         activeOverlay: null,
         drillDownData: null,
         highlightedZones: new Set(),
-        focusedZone: null
+        focusedZone: null,
+        focusedElementType: null
       });
       return;
     }
@@ -344,7 +384,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   focusOnZone: (zoneId: string, _smooth: boolean = true) => {
-    set({ focusedZone: zoneId });
+    set({ focusedZone: zoneId, focusedElementType: 'zone' });
+  },
+
+  focusOnElement: (elementId: string, elementType: 'zone' | 'aisle' | 'rack', _smooth: boolean = true) => {
+    set({ focusedZone: elementId, focusedElementType: elementType });
   },
 
   clearMonitoringState: () => {
@@ -353,7 +397,8 @@ export const useStore = create<AppState>((set, get) => ({
       activeOverlay: null,
       drillDownData: null,
       highlightedZones: new Set(),
-      focusedZone: null
+      focusedZone: null,
+      focusedElementType: null
     });
   },
 

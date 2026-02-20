@@ -14,6 +14,7 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
   const setCameraMode = useStore((state) => state.setCameraMode);
   const warehouseLayout = useStore((state) => state.warehouseLayout);
   const theme = useStore((state) => state.theme);
+  const leftSidebarCollapsed = useStore((state) => state.leftSidebarCollapsed);
   const [hoveredView, setHoveredView] = useState<string | null>(null);
   const [controlsReady, setControlsReady] = useState(false);
 
@@ -36,6 +37,53 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
 
   const handleCameraMode = (mode: CameraMode) => {
     setCameraMode(mode);
+  };
+
+  // Normalized isometric camera direction (0.7, 1.2, 0.7) → length ≈ 1.556
+  const ISO_DIR = new THREE.Vector3(0.7, 1.2, 0.7).normalize();
+
+  const fitOrthographicZoom = () => {
+    if (!warehouseLayout) return 1;
+    const bounds = warehouseLayout.bounds;
+    const w = bounds.maxX - bounds.minX;
+    const d = bounds.maxZ - bounds.minZ;
+    const camera = controlsRef.current?.object;
+    if (!camera || !('isOrthographicCamera' in camera)) return 1;
+    // Frustum extents at zoom=1
+    const frustumW = (camera as THREE.OrthographicCamera).right - (camera as THREE.OrthographicCamera).left;
+    const frustumH = (camera as THREE.OrthographicCamera).top - (camera as THREE.OrthographicCamera).bottom;
+    // Fit with ~15% padding
+    return Math.min(frustumW / (w * 1.15), frustumH / (d * 1.15));
+  };
+
+  const fitIsometricDistance = () => {
+    if (!warehouseLayout) return 50;
+    const bounds = warehouseLayout.bounds;
+    const w = bounds.maxX - bounds.minX;
+    const d = bounds.maxZ - bounds.minZ;
+    const footprintDiag = Math.sqrt(w * w + d * d);
+    const camera = controlsRef.current?.object;
+    const vFov = ((camera?.fov || 60) * Math.PI) / 180;
+    // ~15% padding around the footprint
+    return (footprintDiag * 0.65) / Math.tan(vFov / 2);
+  };
+
+  const handleSwitch3D = () => {
+    if (!warehouseLayout) return;
+    const bounds = warehouseLayout.bounds;
+    const center = new THREE.Vector3(
+      (bounds.minX + bounds.maxX) / 2,
+      0,
+      (bounds.minZ + bounds.maxZ) / 2
+    );
+    const fitDist = fitIsometricDistance();
+    const camPos = center.clone().addScaledVector(ISO_DIR, fitDist);
+    if (cameraMode !== 'perspective') {
+      setCameraMode('perspective');
+      setTimeout(() => animateCamera(camPos, center), 100);
+    } else {
+      animateCamera(camPos, center);
+    }
   };
 
   const animateCamera = (position: THREE.Vector3, lookAt: THREE.Vector3, zoom?: number) => {
@@ -90,185 +138,198 @@ export default function ViewGizmo({ controlsRef }: ViewGizmoProps) {
       bounds.maxZ - bounds.minZ,
       bounds.maxY - bounds.minY
     );
-
-    const distance = size * 2;
+    const distance = size * 2; // used by map view for top-down height
 
     switch (view) {
       case 'map':
         // Map view - Top-down orthographic
-        // Switch to orthographic if not already
         if (cameraMode !== 'orthographic') {
           setCameraMode('orthographic');
-          // Delay animation to allow camera mode to switch
+          // Delay to allow orthographic camera to initialise before reading its frustum
           setTimeout(() => {
             animateCamera(
               new THREE.Vector3(center.x, distance, center.z),
               center,
-              2.5
+              fitOrthographicZoom()
             );
           }, 100);
         } else {
           animateCamera(
             new THREE.Vector3(center.x, distance, center.z),
             center,
-            2.5
+            fitOrthographicZoom()
           );
         }
         break;
 
-      case 'birds-eye':
-        // Isometric-style birds eye view
+      case 'birds-eye': {
+        // Fit the warehouse footprint snugly in view
+        const fitDist = fitIsometricDistance();
+        const camPos = center.clone().addScaledVector(ISO_DIR, fitDist);
         animateCamera(
-          new THREE.Vector3(
-            center.x + distance * 0.7,
-            distance * 1.2,
-            center.z + distance * 0.7
-          ),
+          camPos,
           center,
           cameraMode === 'orthographic' ? 2.0 : undefined
         );
         break;
+      }
     }
   };
 
-  // Failsafe: Always render the UI, even if controls aren't ready
-  // Use portal to render directly to body, bypassing any parent containers
+  // Separate the gizmo and controls into two containers
+  // Position gizmo 16px from top navigation (104px + 16px = 120px) 
+  // and 16px from left sidebar edge (48px or 400px + 16px)
+  const leftOffset = leftSidebarCollapsed ? 48 + 16 : 400 + 16; // 64px or 416px
+  
   const gizmoUI = (
-    <div 
-      className="fixed bottom-6 right-6 flex flex-col gap-3" 
-      style={{ 
-        zIndex: 99999,
-        isolation: 'isolate', 
-        pointerEvents: 'auto',
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px'
-      }}
-    >
-      {/* Main Gizmo Container */}
+    <>
+      {/* 3D Orientation Gizmo - Top Left of Canvas */}
       <div 
-        className="rounded-xl overflow-hidden shadow-2xl"
-        style={{
-          backgroundColor: theme === 'dark' ? '#16181f' : '#ffffff',
-          border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-          minWidth: '160px',
-          backdropFilter: 'blur(20px)'
+        className="transition-all duration-300"
+        style={{ 
+          position: 'fixed',
+          top: '120px', // 104px nav + 16px spacing
+          left: `${leftOffset}px`,
+          zIndex: 99999,
+          isolation: 'isolate', 
+          pointerEvents: 'auto'
         }}
       >
-        {/* 3D Orientation Cube */}
-        <div 
-          className="relative p-3 border-b"
-          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-        >
-          <OrientationCube controlsRef={controlsRef} />
-        </div>
+        <OrientationCube controlsRef={controlsRef} />
+      </div>
 
-        {/* View Presets */}
-        <div className="p-2">
-          <div className="flex flex-col gap-1.5">
-            <button
-              onClick={() => handleViewPreset('map')}
-              onMouseEnter={() => setHoveredView('map')}
-              onMouseLeave={() => setHoveredView(null)}
-              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
-              style={{
-                backgroundColor: hoveredView === 'map' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: hoveredView === 'map' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
-              }}
+      {/* View Controls - Bottom Right */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 99999,
+          isolation: 'isolate',
+          pointerEvents: 'auto',
+        }}
+      >
+        <div
+          className="rounded-xl overflow-hidden shadow-2xl"
+          style={{
+            backgroundColor: theme === 'dark' ? '#16181f' : '#ffffff',
+            border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+            width: '148px',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          {/* 2D / 3D View Toggle */}
+          <div className="p-1.5">
+            <div
+              className="flex rounded-lg p-0.5"
+              style={{ backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }}
             >
-              <span className="text-sm">🗺️</span>
-              <span>Map View</span>
-            </button>
-            
+              <button
+                onClick={() => handleViewPreset('map')}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'orthographic' ? '#3b82f6' : 'transparent',
+                  color: cameraMode === 'orthographic'
+                    ? 'white'
+                    : theme === 'dark' ? 'rgba(156,163,175,1)' : 'rgba(75,85,99,1)',
+                }}
+                title="2D map view"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="1" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="3" y1="15" x2="21" y2="15" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+                2D
+              </button>
+              <button
+                onClick={handleSwitch3D}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'perspective' ? '#3b82f6' : 'transparent',
+                  color: cameraMode === 'perspective'
+                    ? 'white'
+                    : theme === 'dark' ? 'rgba(156,163,175,1)' : 'rgba(75,85,99,1)',
+                }}
+                title="3D view"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                </svg>
+                3D
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: '1px', backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
+
+          {/* Ortho / Persp Projection Toggle */}
+          <div className="p-1.5">
+            <div
+              className="flex rounded-lg p-0.5"
+              style={{ backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }}
+            >
+              <button
+                onClick={() => handleCameraMode('orthographic')}
+                className="flex-1 flex items-center justify-center py-1.5 rounded-md text-[10px] font-medium transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'orthographic' ? '#3b82f6' : 'transparent',
+                  color: cameraMode === 'orthographic'
+                    ? 'white'
+                    : theme === 'dark' ? 'rgba(156,163,175,1)' : 'rgba(75,85,99,1)',
+                }}
+                title="Orthographic projection"
+              >
+                Ortho
+              </button>
+              <button
+                onClick={() => handleCameraMode('perspective')}
+                className="flex-1 flex items-center justify-center py-1.5 rounded-md text-[10px] font-medium transition-all"
+                style={{
+                  backgroundColor: cameraMode === 'perspective' ? '#3b82f6' : 'transparent',
+                  color: cameraMode === 'perspective'
+                    ? 'white'
+                    : theme === 'dark' ? 'rgba(156,163,175,1)' : 'rgba(75,85,99,1)',
+                }}
+                title="Perspective projection"
+              >
+                Persp
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: '1px', backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
+
+          {/* Fit / Zoom Extents */}
+          <div className="p-1.5">
             <button
               onClick={() => handleViewPreset('birds-eye')}
-              onMouseEnter={() => setHoveredView('birds-eye')}
+              onMouseEnter={() => setHoveredView('fit')}
               onMouseLeave={() => setHoveredView(null)}
-              className="w-full px-3 py-2 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all"
               style={{
-                backgroundColor: hoveredView === 'birds-eye' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: hoveredView === 'birds-eye' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(209, 213, 219, 1)' : 'rgba(55, 65, 81, 1)'
+                backgroundColor: hoveredView === 'fit'
+                  ? '#3b82f6'
+                  : theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                color: hoveredView === 'fit'
+                  ? 'white'
+                  : theme === 'dark' ? 'rgba(156,163,175,1)' : 'rgba(75,85,99,1)',
               }}
+              title="Fit view to extents"
             >
-              <span className="text-sm">🦅</span>
-              <span>Birds Eye</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Camera Mode Toggle */}
-        <div 
-          className="p-2 border-t"
-          style={{ borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
-        >
-          <div className="flex gap-1">
-            <button
-              onClick={() => handleCameraMode('orthographic')}
-              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
-              style={{
-                backgroundColor: cameraMode === 'orthographic' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: cameraMode === 'orthographic' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
-              }}
-              title="Orthographic projection"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-              >
-                <rect x="4" y="4" width="16" height="16" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="12" y1="4" x2="12" y2="20" />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
               </svg>
-              <span className="text-[10px] mt-1">Ortho</span>
-            </button>
-            
-            <button
-              onClick={() => handleCameraMode('perspective')}
-              className="flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-lg transition-all"
-              style={{
-                backgroundColor: cameraMode === 'perspective' 
-                  ? '#3b82f6' 
-                  : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                color: cameraMode === 'perspective' 
-                  ? 'white' 
-                  : theme === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)'
-              }}
-              title="Perspective projection"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-              >
-                <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z" />
-                <line x1="12" y1="12" x2="21" y2="7" />
-                <line x1="12" y1="12" x2="3" y2="7" />
-              </svg>
-              <span className="text-[10px] mt-1">Persp</span>
+              Fit View
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 
   return createPortal(gizmoUI, document.body);
@@ -376,9 +437,6 @@ function OrientationCube({ controlsRef }: OrientationCubeProps) {
   return (
     <div 
       className="flex items-center justify-center rounded-lg"
-      style={{
-        backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
-      }}
     >
       <canvas
         ref={canvasRef}

@@ -17,7 +17,6 @@ export default function OverlayLegend() {
     return null;
   }
 
-  // Get overlay name
   const overlayNames = {
     heat_congestion: 'Zone Congestion',
     heat_utilization: 'Labor Utilization',
@@ -25,7 +24,6 @@ export default function OverlayLegend() {
   };
   const overlayName = overlayNames[activeOverlay] || activeOverlay;
 
-  // Get legend units
   const legendUnits = {
     heat_congestion: 'Density (0-1)',
     heat_utilization: 'Utilization (%)',
@@ -41,14 +39,14 @@ export default function OverlayLegend() {
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="glass-panel rounded-xl p-3 hover:bg-white/10 transition-all group"
+        className="glass-panel rounded-xl p-3 hover:bg-gray-100 dark:hover:bg-white/10 transition-all group"
         title={`Expand ${overlayName}`}
       >
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8M4 18h12" />
           </svg>
-          <span className="text-xs text-gray-400 group-hover:text-gray-200">{overlayName}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200">{overlayName}</span>
         </div>
       </button>
     );
@@ -58,14 +56,14 @@ export default function OverlayLegend() {
     <div className="overlay-legend glass-panel rounded-xl p-4 min-w-[220px] animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-medium text-gray-100">
+        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {overlayName}
         </h4>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsCollapsed(true)}
-            className="text-gray-400 hover:text-gray-200 
-                       transition-colors p-1.5 rounded-lg hover:bg-white/5"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 
+                       transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
             title="Collapse"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,8 +72,8 @@ export default function OverlayLegend() {
           </button>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-200 
-                       transition-colors p-1.5 rounded-lg hover:bg-white/5"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 
+                       transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
             title="Hide overlay"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,8 +85,8 @@ export default function OverlayLegend() {
 
       {/* Color Gradient */}
       <div className="mb-3">
-        <div
-          className="h-7 rounded-lg shadow-inner border border-white/10"
+        <div 
+          className="h-7 rounded-lg shadow-inner border border-gray-200 dark:border-white/10"
           style={{
             background: `linear-gradient(to right, ${colorScale.map(stop => stop.color).join(', ')})`
           }}
@@ -96,7 +94,7 @@ export default function OverlayLegend() {
       </div>
 
       {/* Scale Labels */}
-      <div className="flex justify-between text-xs text-gray-400 mb-2">
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
         <span>Low</span>
         <span>High</span>
       </div>
@@ -107,18 +105,18 @@ export default function OverlayLegend() {
       </div>
 
       {/* Legend items */}
-      <div className="pt-3 border-t border-white/5 space-y-2">
+      <div className="pt-3 border-t border-gray-200 dark:border-white/5 space-y-2">
         {colorScale.map((stop, index) => {
           const label = index === 0 ? 'Low' :
             index === colorScale.length - 1 ? 'High' :
               'Moderate';
           return (
             <div key={index} className="flex items-center gap-2.5">
-              <div
-                className="w-4 h-4 rounded border border-white/10 shadow-sm"
+              <div 
+                className="w-4 h-4 rounded border border-gray-200 dark:border-white/10 shadow-sm"
                 style={{ backgroundColor: stop.color }}
               />
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {label} ({(stop.value * 100).toFixed(0)}%)
               </span>
             </div>

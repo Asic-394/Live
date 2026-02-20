@@ -1,12 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from './state/store';
 import WarehouseScene from './components/Scene/WarehouseScene';
-import StatusBar from './components/Controls/StatusBar';
 import EntityDetailPanel from './components/Panels/EntityDetailPanel';
 import ErrorDisplay from './components/Controls/ErrorDisplay';
 import ViewGizmo from './components/UI/ViewGizmo';
 import DrillDownPanel from './components/Panels/DrillDownPanel';
-import OverlayLegend from './components/Controls/OverlayLegend';
 import LeftSidebar from './components/Layout/LeftSidebar';
 import ObjectiveBar from './components/Layout/ObjectiveBar';
 import TopNavBar from './components/Layout/TopNavBar';
@@ -53,27 +51,17 @@ function App() {
       {/* Left Sidebar - Positioned with top offset to account for both bars */}
       <LeftSidebar />
 
-      {/* Status Bar and Overlay Legend - Adjusted position */}
-      <div className="absolute top-28 right-6 z-10 flex gap-3">
-        <OverlayLegend />
-        <StatusBar />
-      </div>
-
       {/* 3D Scene */}
       <WarehouseScene controlsRef={controlsRef} />
 
       {/* View Gizmo with Camera Controls */}
       <ViewGizmo controlsRef={controlsRef} />
 
-      {/* Entity Detail Panel - Adjusted top position for both bars */}
-      <div style={{ position: 'absolute', top: '7.5rem', right: '1.5rem', zIndex: 10 }}>
-        <EntityDetailPanel />
-      </div>
+      {/* Entity Detail Panel */}
+      <EntityDetailPanel />
 
-      {/* Drill-Down Panel - Adjusted top position for both bars */}
-      <div style={{ position: 'absolute', top: '7.5rem', right: '1.5rem', zIndex: 10 }}>
-        <DrillDownPanel />
-      </div>
+      {/* Drill-Down Panel */}
+      <DrillDownPanel />
 
       {/* Error Display */}
       <ErrorDisplay />

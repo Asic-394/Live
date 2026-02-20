@@ -16,15 +16,15 @@ function TaskGroup({ title, icon, count, children, isExpanded, onToggle }: TaskG
     <div className="mb-3">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+        className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">{icon}</span>
-          <span className="text-sm font-medium text-gray-300">{title}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</span>
           <span className="text-xs text-gray-500">({count})</span>
         </div>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -55,7 +55,7 @@ function OrderItem({ orderId, tasks, onSelect }: OrderItemProps) {
   const priorityColor = isAtRisk ? 'text-red-400' : progressPercent >= 75 ? 'text-emerald-400' : 'text-amber-400';
 
   return (
-    <div className="ml-4 mb-2 p-2 rounded-lg bg-white/5 border border-white/10">
+    <div className="ml-4 mb-2 p-2 rounded-lg bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className={`text-sm font-medium ${priorityColor}`}>{orderId}</span>
@@ -78,12 +78,12 @@ function OrderItem({ orderId, tasks, onSelect }: OrderItemProps) {
             <button
               key={task.entity_id}
               onClick={() => onSelect(task.entity_id)}
-              className="w-full flex items-center gap-2 px-2 py-1 rounded hover:bg-white/5 text-left text-xs"
+              className="w-full flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/5 text-left text-xs"
             >
               <span>{statusIcon}</span>
-              <span className="text-gray-300">{task.task}</span>
+              <span className="text-gray-700 dark:text-gray-300">{task.task}</span>
               <span className="text-gray-500">•</span>
-              <span className="text-gray-400">{task.entity_id}</span>
+              <span className="text-gray-600 dark:text-gray-400">{task.entity_id}</span>
               <span className="text-gray-500">•</span>
               <span className="text-gray-500">{task.zone}</span>
             </button>
@@ -159,7 +159,7 @@ export default function TaskHierarchy() {
   );
 
   return (
-    <div className="w-full text-gray-100 flex flex-col">
+    <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col">
       {/* Search */}
       <div className="mb-3 px-2">
         <input
@@ -167,7 +167,7 @@ export default function TaskHierarchy() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search orders/waves..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
+          className="w-full bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
         />
       </div>
 
@@ -205,23 +205,23 @@ export default function TaskHierarchy() {
           {filteredWaves.map(([waveId, tasks]) => {
             const taskTypes = new Set(tasks.map(t => t.task));
             return (
-              <div key={waveId} className="ml-4 mb-2 p-2 rounded-lg bg-white/5 border border-white/10">
+              <div key={waveId} className="ml-4 mb-2 p-2 rounded-lg bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium text-blue-400">{waveId}</span>
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{waveId}</span>
                   <span className="text-xs text-gray-500">({tasks.length} entities)</span>
                 </div>
                 <div className="space-y-1">
                   {Array.from(taskTypes).map((taskType) => {
                     const taskEntities = tasks.filter(t => t.task === taskType);
                     return (
-                      <div key={taskType} className="text-xs text-gray-400">
+                      <div key={taskType} className="text-xs text-gray-600 dark:text-gray-400">
                         {taskType} ({taskEntities.length})
                         <div className="ml-4 mt-1 space-y-0.5">
                           {taskEntities.map((entity) => (
                             <button
                               key={entity.entity_id}
                               onClick={() => selectEntity(entity.entity_id)}
-                              className="block w-full text-left hover:text-gray-200"
+                              className="block w-full text-left hover:text-gray-900 dark:hover:text-gray-200"
                             >
                               {entity.entity_id} • {entity.zone}
                             </button>
@@ -241,7 +241,7 @@ export default function TaskHierarchy() {
       </div>
 
       {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-400 flex justify-between px-2">
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex justify-between px-2">
         <span>{filteredOrders.length} orders</span>
         <span>{filteredWaves.length} waves</span>
         <span>{entities.filter(e => e.assigned_to).length} assigned</span>

@@ -2,21 +2,24 @@
   "scenarioId": "scenario_congestion",
   "overlays": {
     "heat_congestion": [
-      { "zoneId": "Zone-A", "intensity": 0.30, "value": 0.38 },
-      { "zoneId": "Zone-B", "intensity": 0.50, "value": 0.62 },
-      { "zoneId": "Zone-C", "intensity": 0.95, "value": 0.85 },
-      { "zoneId": "Zone-D", "intensity": 0.35, "value": 0.42 }
+      { "zoneId": "Zone-A", "intensity": 0.30, "value": 8 },
+      { "zoneId": "Zone-B1", "intensity": 0.65, "value": 15 },
+      { "zoneId": "Zone-B2", "intensity": 0.50, "value": 12 },
+      { "zoneId": "Zone-B3", "intensity": 0.40, "value": 10 },
+      { "zoneId": "Zone-D", "intensity": 0.35, "value": 8 }
     ],
     "heat_utilization": [
       { "zoneId": "Zone-A", "intensity": 0.60, "value": 75 },
-      { "zoneId": "Zone-B", "intensity": 0.68, "value": 78 },
-      { "zoneId": "Zone-C", "intensity": 0.88, "value": 92 },
+      { "zoneId": "Zone-B1", "intensity": 0.75, "value": 85 },
+      { "zoneId": "Zone-B2", "intensity": 0.68, "value": 78 },
+      { "zoneId": "Zone-B3", "intensity": 0.60, "value": 72 },
       { "zoneId": "Zone-D", "intensity": 0.52, "value": 68 }
     ],
     "heat_throughput": [
       { "zoneId": "Zone-A", "intensity": 0.48, "value": 10 },
-      { "zoneId": "Zone-B", "intensity": 0.62, "value": 16 },
-      { "zoneId": "Zone-C", "intensity": 0.52, "value": 12 },
+      { "zoneId": "Zone-B1", "intensity": 0.72, "value": 20 },
+      { "zoneId": "Zone-B2", "intensity": 0.62, "value": 16 },
+      { "zoneId": "Zone-B3", "intensity": 0.50, "value": 12 },
       { "zoneId": "Zone-D", "intensity": 0.35, "value": 6 }
     ]
   }

@@ -11,7 +11,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="glass-panel px-3 py-2.5 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-200 flex items-center gap-2"
+      className="glass-panel px-3 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-200 flex items-center gap-2"
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >

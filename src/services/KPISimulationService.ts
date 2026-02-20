@@ -103,13 +103,16 @@ export class KPISimulationService {
       case 'density':
         // Density stays between 0 and 1
         return Math.max(0, Math.min(1, value));
+      case 'workers':
+        // Worker counts must be non-negative integers
+        return Math.max(0, Math.round(value));
       case 'orders':
       case 'orders/hr':
-        // Order counts can't be negative
-        return Math.max(0, value);
+        // Order counts must be non-negative integers
+        return Math.max(0, Math.round(value));
       case 'sec':
-        // Time can't be negative
-        return Math.max(0, value);
+        // Time must be non-negative integer
+        return Math.max(0, Math.round(value));
       default:
         return value;
     }

@@ -31,12 +31,12 @@ export default function LocationSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group"
         title="Select location"
       >
         {/* Map Pin Icon */}
         <svg
-          className="w-4 h-4 text-gray-400 group-hover:text-gray-300"
+          className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -55,13 +55,13 @@ export default function LocationSelector() {
           />
         </svg>
         
-        <span className="text-sm font-medium text-gray-300 group-hover:text-gray-100 hidden lg:inline">
+        <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 hidden lg:inline">
           {currentSite.name}
         </span>
         
         {/* Dropdown chevron */}
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -74,7 +74,7 @@ export default function LocationSelector() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 glass-panel rounded-lg shadow-xl border border-white/10 z-50 animate-fade-in">
+        <div className="absolute top-full left-0 mt-2 w-64 glass-panel rounded-lg shadow-xl border border-gray-200 dark:border-white/10 z-50 animate-fade-in">
           <div className="p-2">
             {availableSites.map((site) => (
               <button
@@ -85,8 +85,8 @@ export default function LocationSelector() {
                 }}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                   currentSite.id === site.id
-                    ? 'bg-blue-500/20 text-blue-300'
-                    : 'hover:bg-white/5 text-gray-300'
+                    ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                    : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <div className="flex items-start gap-2">
@@ -111,7 +111,7 @@ export default function LocationSelector() {
                   </svg>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{site.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{site.location}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{site.location}</div>
                   </div>
                   {currentSite.id === site.id && (
                     <svg
@@ -132,7 +132,7 @@ export default function LocationSelector() {
           </div>
           
           {/* Future: Add "Add Location" option */}
-          <div className="border-t border-white/5 p-2">
+          <div className="border-t border-gray-200 dark:border-white/5 p-2">
             <div className="px-3 py-2 text-xs text-gray-500">
               Multiple sites coming soon
             </div>

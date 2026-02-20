@@ -88,14 +88,14 @@ export default function LensSwitcher() {
             onClick={() => handleLensToggle(lens.id)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
               isActive
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+                ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-400/30'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 border border-transparent'
             }`}
             title={lens.description}
           >
             <LensIcon
               icon={lens.icon}
-              className={isActive ? 'text-blue-400' : 'text-gray-400'}
+              className={isActive ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}
             />
             <span className="text-sm font-medium hidden xl:inline">{lens.label}</span>
             

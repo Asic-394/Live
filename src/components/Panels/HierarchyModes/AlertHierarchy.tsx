@@ -55,16 +55,16 @@ function AlertItem({ title, severity, description, location, affectedCount, reco
         </div>
       </div>
       
-      {recommendation && (
-        <div className="mt-2 pt-2 border-t border-white/10">
-          <div className="text-xs text-gray-400 mb-1">💡 Recommendation:</div>
-          <div className="text-xs text-gray-300">{recommendation}</div>
+          {recommendation && (
+        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">💡 Recommendation:</div>
+          <div className="text-xs text-gray-700 dark:text-gray-300">{recommendation}</div>
         </div>
       )}
       
       <button
         onClick={onView}
-        className="mt-2 text-xs px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-300 hover:text-gray-100 transition-colors border border-white/10"
+        className="mt-2 text-xs px-3 py-1.5 rounded bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors border border-gray-200 dark:border-white/10"
       >
         View on Map
       </button>
@@ -221,7 +221,7 @@ export default function AlertHierarchy() {
   };
 
   return (
-    <div className="w-full text-gray-100 flex flex-col">
+    <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col">
       {/* Search */}
       <div className="mb-3 px-2">
         <input
@@ -229,7 +229,7 @@ export default function AlertHierarchy() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search alerts..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
+          className="w-full bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
         />
       </div>
 
@@ -305,10 +305,10 @@ export default function AlertHierarchy() {
       </div>
 
       {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-400 flex justify-between px-2">
-        <span className="text-red-400">{criticalAlerts.length} critical</span>
-        <span className="text-amber-400">{warningAlerts.length} warnings</span>
-        <span className="text-blue-400">{monitoringAlerts.length} monitoring</span>
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10 text-xs flex justify-between px-2">
+        <span className="text-red-600 dark:text-red-400">{criticalAlerts.length} critical</span>
+        <span className="text-amber-600 dark:text-amber-400">{warningAlerts.length} warnings</span>
+        <span className="text-blue-600 dark:text-blue-400">{monitoringAlerts.length} monitoring</span>
       </div>
     </div>
   );

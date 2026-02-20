@@ -11,6 +11,7 @@ interface RackInventoryProps {
   depth: number;
   levels: number;
   isDimmed: boolean;
+  isSelected: boolean;
   cameraDistance: number;
 }
 
@@ -30,6 +31,7 @@ export default function RackInventory({
   height,
   depth,
   isDimmed,
+  isSelected,
 }: RackInventoryProps) {
   const theme = useStore((state) => state.theme);
   const config = getThemeConfig(theme);
@@ -51,13 +53,15 @@ export default function RackInventory({
   const palletGeometry = useMemo(() => GeometryPool.getBox(palletWidth, palletHeight, palletDepth), [palletWidth, palletHeight, palletDepth]);
   const palletMaterial = useMemo(() => 
     MaterialPool.getStandardMaterial({
-      color: colors.boxBase,
+      color: isSelected ? colors.rackSelected : colors.boxBase,
       roughness: config.materials.entity.roughness * 1.5,
-      metalness: config.materials.entity.metalness * 0.7,
+      metalness: isSelected ? 0.5 : config.materials.entity.metalness * 0.7,
       transparent: shouldBeTransparent,
       opacity: opacity,
+      emissive: isSelected ? colors.selectionGlow : '#000000',
+      emissiveIntensity: isSelected ? config.effects.selection.emissiveIntensity * 0.15 : 0,
     }),
-    [colors.boxBase, config.materials.entity, shouldBeTransparent, opacity]
+    [colors.boxBase, colors.rackSelected, colors.selectionGlow, isSelected, config.materials.entity, config.effects.selection, shouldBeTransparent, opacity]
   );
   
   return (

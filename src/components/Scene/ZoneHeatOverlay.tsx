@@ -14,17 +14,15 @@ function ZoneHeatOverlayComponent({ zone, color, opacity = 0.6 }: ZoneHeatOverla
 
   const position = useMemo(() => {
     const pos = CoordinateMapper.csvToThree(zone.x, zone.y, zone.z || 0);
-    // Position slightly above floor with unique offset per zone to prevent z-fighting
-    const offset = (zone.element_id?.charCodeAt(0) || 0) % 10;
-    return [pos.x, 0.02 + offset * 0.001, pos.z] as [number, number, number];
-  }, [zone.x, zone.y, zone.z, zone.element_id]);
+    // Position slightly above zone floor (0.05) to avoid z-fighting
+    return [pos.x, 0.06, pos.z] as [number, number, number];
+  }, [zone.x, zone.y, zone.z]);
 
   const rotation = useMemo(() => {
     const rotRad = ((zone.rotation || 0) * Math.PI) / 180;
-    return [-Math.PI / 2, 0, rotRad] as [number, number, number]; // Flat plane
+    return [-Math.PI / 2, 0, rotRad] as [number, number, number];
   }, [zone.rotation]);
 
-  // Update material color without recreating the material
   useEffect(() => {
     if (materialRef.current) {
       materialRef.current.color.set(color);
@@ -37,7 +35,7 @@ function ZoneHeatOverlayComponent({ zone, color, opacity = 0.6 }: ZoneHeatOverla
     <mesh 
       position={position} 
       rotation={rotation}
-      renderOrder={100}
+      renderOrder={2}
     >
       <planeGeometry args={[zone.width, zone.depth]} />
       <meshBasicMaterial
@@ -47,13 +45,15 @@ function ZoneHeatOverlayComponent({ zone, color, opacity = 0.6 }: ZoneHeatOverla
         opacity={opacity}
         side={THREE.DoubleSide}
         depthWrite={false}
-        depthTest={false}
+        depthTest={true}
+        polygonOffset={true}
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
       />
     </mesh>
   );
 }
 
-// Memoize to prevent re-renders when props haven't changed
 export default memo(ZoneHeatOverlayComponent, (prev, next) => {
   return (
     prev.zone.element_id === next.zone.element_id &&

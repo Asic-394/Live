@@ -16,15 +16,15 @@ function ResourceGroup({ title, icon, count, children, isExpanded, onToggle }: R
     <div className="mb-3">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+        className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">{icon}</span>
-          <span className="text-sm font-medium text-gray-300">{title}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</span>
           <span className="text-xs text-gray-500">({count})</span>
         </div>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -57,7 +57,7 @@ function ResourceItem({ id, label, status, task, location, batteryLevel, onSelec
   return (
     <button
       onClick={onSelect}
-      className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-white/5 transition-colors text-left group"
+      className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left group"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function ResourceHierarchy() {
   };
 
   return (
-    <div className="w-full text-gray-100 flex flex-col">
+    <div className="w-full text-gray-900 dark:text-gray-100 flex flex-col">
       {/* Search */}
       <div className="mb-3 px-2">
         <input
@@ -138,7 +138,7 @@ export default function ResourceHierarchy() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search resources..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
+          className="w-full bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-400/50"
         />
       </div>
 
@@ -268,7 +268,7 @@ export default function ResourceHierarchy() {
       </div>
 
       {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-gray-400 flex justify-between px-2">
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex justify-between px-2">
         <span>{workers.length} workers</span>
         <span>{forklifts.length} forklifts</span>
         <span>{trucks.length} trucks</span>
